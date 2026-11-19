@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Order Verification - NyayaDesk Certified Judicial Record{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; padding-top: var(--space-8); padding-bottom: var(--space-8);">
+  {% if valid %}
+    <div class="card" style="border: 2px solid var(--color-success); background: var(--color-surface); box-shadow: var(--shadow-xl); overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #064E3B, #047857); color: #FFFFFF; padding: var(--space-6); text-align: center;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.2); display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--space-2);">
+          <i data-lucide="shield-check" style="width: 32px; height: 32px; color: #6EE7B7;"></i>
+        </div>
+        <h2 style="font-family: var(--font-serif); font-size: 1.6rem; font-weight: 700; margin: 0 0 6px 0;">
+          Digitally Certified Judicial Order
+        </h2>
+        <div style="font-size: 0.88rem; opacity: 0.9;">
+          Electronic Seal Authenticated &bull; Cryptographically Verified
+        </div>
+      </div>
+
+      <div style="padding: var(--space-6);">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6);">
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 600;">Verification Code</div>
+            <div style="font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--color-primary); margin-top: 2px;">
+              {{ order.verification_code }}
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 600;">Case Number</div>
+            <div style="font-weight: 700; font-size: 1rem; color: var(--color-text); margin-top: 2px;">
+              {{ order.case_number }}
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 600;">Presiding Judge</div>
+            <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-text); margin-top: 2px;">
+              {{ order.judge_name }}
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 600;">Date of Pronouncement</div>
+            <div style="font-size: 0.95rem; color: var(--color-text); margin-top: 2px;">
+              {{ order.issued_at }}
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-4); margin-bottom: var(--space-4);">
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 600;">Order Title & Classification</div>
+          <div style="font-size: 1.1rem; font-weight: 700; color: var(--color-text); margin-top: 4px;">
+            {{ order.title }} <span class="badge badge-primary">{{ order.order_type }}</span>
+          </div>
+        </div>
+
+        <div style="background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-6);">
+          <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 600; margin-bottom: var(--space-2);">Certified Operative Excerpt</div>
+          <p style="font-size: 0.92rem; line-height: 1.6; color: var(--color-text); margin: 0; white-space: pre-wrap;">{{ order.content }}</p>
+        </div>
+
+        <div style="background: rgba(11, 31, 58, 0.04); border-left: 3px solid var(--color-accent); padding: var(--space-3) var(--space-4); font-size: 0.75rem; color: var(--color-text-muted);">
+          <strong>Digital Signature SHA-256 Digest:</strong>
+          <code style="font-family: var(--font-mono); color: var(--color-accent); word-break: break-all; display: block; margin-top: 2px;">{{ order.signed_hash }}</code>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card" style="border: 2px solid var(--color-danger); background: var(--color-surface); text-align: center; padding: var(--space-8);">
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(239, 68, 68, 0.1); color: var(--color-danger); display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--space-4);">
+        <i data-lucide="alert-octagon" style="width: 36px; height: 36px;"></i>
+      </div>
+      <h2 style="font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700; color: var(--color-danger); margin-bottom: var(--space-2);">
+        Order Verification Failed
+      </h2>
+      <p style="color: var(--color-text-secondary); max-width: 480px; margin: 0 auto var(--space-6) auto; font-size: 0.95rem;">
+        No certified judicial record was found for verification token:
+        <code style="font-family: var(--font-mono); font-weight: 700;">{{ code }}</code>.
+        The document may be invalid, rescinded, or forged.
+      </p>
+      <a href="{{ url_for('main.index') }}" class="btn btn-outline">
+        &larr; Return to Judiciary Home
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

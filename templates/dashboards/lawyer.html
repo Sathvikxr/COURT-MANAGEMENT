@@ -1,0 +1,607 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Advocate Practice Portal - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+
+  <!-- 1. PAGE HEADER (Linear / Stripe Style) -->
+  <div class="dashboard-page-header">
+    <div class="header-left">
+      <div class="header-eyebrow">
+        <span class="role-chip" style="background: rgba(201, 162, 75, 0.12); color: var(--color-accent);">
+          <i data-lucide="scale" style="width: 12px; height: 12px;"></i> Bar Council Registered Counsel
+        </span>
+        <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
+          <span class="status-indicator live"></span> Bar Enrollment: <code>{{ user.id_proof_no or 'D/1482/2018' }}</code> &bull; Delhi High Court Bar Association
+        </span>
+      </div>
+      <h1 class="page-title">{{ user.full_name }} &bull; Chamber Practice</h1>
+      <p class="page-subtitle">
+        Litigation docket management, electronic petition filing, certified order inspection, and client retainer ledgers.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="openModal('upload-doc-modal')">
+        <i data-lucide="upload"></i> Upload Vakalatnama / Brief
+      </button>
+      <button class="btn btn-accent btn-sm" onclick="openModal('efile-modal')">
+        <i data-lucide="file-plus-2"></i> E-File Petition
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. KPI METRICS ROW -->
+  <div class="kpi-grid" style="margin-bottom: var(--space-6);">
+    <!-- KPI 1 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Active Briefs</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="arrow-up-right" style="width: 12px; height: 12px;"></i> +2 this month
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="{{ my_cases|length }}">{{ my_cases|length }}</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 14L26 15L38 9L50 11L62 4" stroke="var(--color-primary-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Counsel officially on court record</div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Upcoming Listings</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="calendar" style="width: 12px; height: 12px;"></i> 3 this week
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="3">3</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 12L14 10L26 14L38 7L50 9L62 3" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">High Court & District Benches</div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Scrutiny Clearance</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check" style="width: 12px; height: 12px;"></i> 100%
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" style="font-size: 1.55rem;">Zero Defects</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 16L14 12L26 14L38 8L50 6L62 2" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Passed Registry scrutiny checks</div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Chamber Retainer Ledger</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="trending-up" style="width: 12px; height: 12px;"></i> Reconciled
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" style="font-size: 1.55rem;">₹ 1,65,000</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 15L26 11L38 12L50 6L62 4" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Paid & pending professional fees</div>
+    </div>
+  </div>
+
+  <!-- 3. ACTIVE BRIEFS & LITIGATION DOCKETS (WITH TABLE / CARDS TOGGLE) -->
+  <section class="card" style="margin-bottom: var(--space-8); padding: 0; overflow: hidden; border: 1px solid var(--color-border);">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div>
+          <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Active Litigation Dockets</h3>
+          <p class="card-subtitle" style="font-size: 0.78rem; margin: 0;">Represented matters where counsel is formally on record with Vakalatnama.</p>
+        </div>
+        <div class="filter-chips">
+          <button class="filter-chip-btn active" onclick="filterBriefs('All', this)">All ({{ my_cases|length }})</button>
+          <button class="filter-chip-btn" onclick="filterBriefs('Hearing', this)">In Hearing</button>
+          <button class="filter-chip-btn" onclick="filterBriefs('Registered', this)">Registered</button>
+          <button class="filter-chip-btn" onclick="filterBriefs('Reserved', this)">Judgment Reserved</button>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <!-- Segmented Table / Cards Toggle -->
+        <div style="display: flex; background: var(--color-surface-subtle); padding: 2px; border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+          <button id="view-toggle-table" class="btn btn-sm btn-ghost" style="padding: 4px 10px; font-size: 0.75rem; background: var(--color-surface); box-shadow: var(--shadow-xs); font-weight: 600;" onclick="switchBriefsView('table')">
+            <i data-lucide="table" style="width: 13px; height: 13px;"></i> Table
+          </button>
+          <button id="view-toggle-cards" class="btn btn-sm btn-ghost" style="padding: 4px 10px; font-size: 0.75rem; color: var(--color-text-muted);" onclick="switchBriefsView('cards')">
+            <i data-lucide="layout-grid" style="width: 13px; height: 13px;"></i> Cards
+          </button>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="openModal('efile-modal')">
+          <i data-lucide="plus"></i> New Filing
+        </button>
+      </div>
+    </div>
+
+    <!-- Table View -->
+    <div id="briefs-table-view" class="table-responsive">
+      <table class="table" id="briefs-data-table">
+        <thead>
+          <tr>
+            <th>Case Number</th>
+            <th>Matter Title</th>
+            <th>Category</th>
+            <th>Court Venue</th>
+            <th>Stage / Status</th>
+            <th>Next Listing</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if my_cases %}
+            {% for cs in my_cases %}
+              <tr class="brief-row" data-status="{{ cs.status }}">
+                <td>
+                  <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary-dark); font-size: 0.84rem;">
+                    {{ cs.case_number }}
+                  </span>
+                </td>
+                <td>
+                  <div style="font-weight: 600; font-size: 0.88rem; color: var(--color-text); max-width: 320px;">
+                    {{ cs.title }}
+                  </div>
+                  <div style="font-size: 0.74rem; color: var(--color-text-muted);">
+                    Filed on {{ cs.filed_on.strftime('%d-%m-%Y') if cs.filed_on else 'N/A' }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-primary" style="font-size: 0.72rem;">{{ cs.case_type }}</span>
+                </td>
+                <td>
+                  <div style="font-size: 0.82rem; color: var(--color-text); font-weight: 500;">
+                    {{ cs.court.name if cs.court else 'Delhi High Court' }}
+                  </div>
+                </td>
+                <td>
+                  <span class="status-pill {% if cs.status == 'Hearing' %}status-hearing{% elif cs.status == 'Registered' %}status-registered{% elif cs.status == 'Disposed' %}status-disposed{% else %}status-filed{% endif %}">
+                    <span class="status-dot"></span> {{ cs.status }}
+                  </span>
+                </td>
+                <td>
+                  <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.84rem; color: {% if cs.next_hearing_date %}var(--color-accent-dark){% else %}var(--color-text-muted){% endif %};">
+                    {{ cs.next_hearing_date.strftime('%d-%m-%Y') if cs.next_hearing_date else 'Awaiting' }}
+                  </div>
+                </td>
+                <td style="text-align: right;">
+                  <button class="btn btn-outline btn-sm" onclick="openCaseDrawer({{ cs.id }})">
+                    <i data-lucide="folder-open" style="width: 12px; height: 12px;"></i> Inspect Docket
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: var(--space-10); color: var(--color-text-muted);">
+                <i data-lucide="briefcase" style="width: 40px; height: 40px; stroke-width: 1.2; margin-bottom: var(--space-2); color: var(--color-text-muted);"></i>
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-text);">No Briefs on Record</div>
+                <p style="font-size: 0.8rem; margin-top: 4px;">Click 'E-File Petition' above to lodge an electronic filing with the Registry.</p>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards Grid View (Hidden by Default) -->
+    <div id="briefs-cards-view" class="grid grid-cols-3" style="display: none; padding: var(--space-6); gap: var(--space-5);">
+      {% if my_cases %}
+        {% for cs in my_cases %}
+          <div class="card card-hover brief-card" data-status="{{ cs.status }}" style="border: 1px solid var(--color-border); padding: var(--space-5); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-3);">
+                <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary-dark); font-size: 0.8rem;">
+                  {{ cs.case_number }}
+                </span>
+                <span class="status-pill {% if cs.status == 'Hearing' %}status-hearing{% elif cs.status == 'Registered' %}status-registered{% else %}status-filed{% endif %}" style="font-size: 0.7rem;">
+                  <span class="status-dot"></span> {{ cs.status }}
+                </span>
+              </div>
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--space-2); line-height: 1.4;">
+                {{ cs.title }}
+              </h4>
+              <div style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-4);">
+                Venue: <strong>{{ cs.court.name if cs.court else 'Delhi High Court' }}</strong> &bull; Category: <span class="badge badge-primary" style="font-size: 0.68rem;">{{ cs.case_type }}</span>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-4); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 0.68rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700;">Next Listing</div>
+                <div style="font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; color: var(--color-accent-dark);">
+                  {{ cs.next_hearing_date.strftime('%d %b %Y') if cs.next_hearing_date else 'Awaiting Listing' }}
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="openCaseDrawer({{ cs.id }})">
+                Inspect
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- 4. CHAMBER BILLING & CLIENT RETAINER LEDGER -->
+  <section id="billing-section" class="card" style="margin-bottom: var(--space-8); padding: 0; overflow: hidden; border: 1px solid var(--color-border);">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div>
+          <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Chamber Retainer & Client Billing Ledger</h3>
+          <p class="card-subtitle" style="font-size: 0.78rem; margin: 0;">Track litigation retainers, draft filing fees, senior counsel appearance fees, and GST invoices.</p>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-outline btn-sm" onclick="showToast('Chamber billing ledger synchronized with bank statements', 'success')">
+          <i data-lucide="calculator"></i> Balance Ledger
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Invoice Ref</th>
+            <th>Client Name</th>
+            <th>Brief / Matter</th>
+            <th>Amount (INR)</th>
+            <th>Due / Paid Date</th>
+            <th>Status</th>
+            <th style="text-align: right;">Invoice</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-weight: 700;">INV-2026-081</code></td>
+            <td><strong>Ramesh Chandra Gupta</strong></td>
+            <td>WP(C)/1104/2026 Injunction Application Brief</td>
+            <td><strong style="font-family: var(--font-mono); color: var(--color-text);">₹ 45,000.00</strong></td>
+            <td>12 Feb 2026</td>
+            <td><span class="status-pill status-disposed"><span class="status-dot"></span> PAID</span></td>
+            <td style="text-align: right;">
+              <button class="btn btn-outline btn-sm" onclick="showToast('Downloading Invoice INV-2026-081 PDF', 'info')">
+                <i data-lucide="download" style="width: 12px; height: 12px;"></i> PDF
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td><code style="font-family: var(--font-mono); font-weight: 700;">INV-2026-094</code></td>
+            <td><strong>Apex Infrastructure Pvt Ltd</strong></td>
+            <td>CS(COMM)/88/2026 Cross-Examination & Arguments</td>
+            <td><strong style="font-family: var(--font-mono); color: var(--color-text);">₹ 1,20,000.00</strong></td>
+            <td>28 Feb 2026</td>
+            <td><span class="status-pill status-hearing"><span class="status-dot"></span> PENDING</span></td>
+            <td style="text-align: right;">
+              <button class="btn btn-outline btn-sm" onclick="showToast('Reminder sent to accounts@apexinfra.in', 'success')">
+                <i data-lucide="send" style="width: 12px; height: 12px;"></i> Remind
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- E-File Modal -->
+<div id="efile-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 620px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 8px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-1);">
+          <span class="status-indicator live"></span> Bar Electronic Filing
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">E-File New Petition</h3>
+        <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px;">
+          Direct electronic intake queued for Registrar General scrutiny & CNR issuance.
+        </p>
+      </div>
+      <button onclick="closeModal('efile-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="efile-form" onsubmit="submitEFile(event)" class="modal-body" style="padding: var(--space-6);">
+      <div class="form-group">
+        <label class="form-label" for="efile-title">Petition Title / Case Caption <span style="color: var(--color-danger);">*</span></label>
+        <input type="text" id="efile-title" class="form-control" placeholder="e.g. M/s XYZ Corp vs. Union of India & Ors." required>
+      </div>
+
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="efile-type">Matter Category</label>
+          <select id="efile-type" class="form-control">
+            <option value="Writ">Writ Petition (Civil/Criminal)</option>
+            <option value="Civil">Civil Original Suit</option>
+            <option value="Commercial">Commercial Dispute</option>
+            <option value="Bail">Bail Application (Sec 437/439)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="efile-court">Bench / Complex</label>
+          <select id="efile-court" class="form-control">
+            <option value="1">High Court of Delhi (DLHC01)</option>
+            <option value="2">Patiala House Courts (PHDC01)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="efile-pet">Client / Petitioner Name <span style="color: var(--color-danger);">*</span></label>
+          <input type="text" id="efile-pet" class="form-control" placeholder="e.g. Rajesh Kumar" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="efile-resp">Respondent / Opposite Party <span style="color: var(--color-danger);">*</span></label>
+          <input type="text" id="efile-resp" class="form-control" placeholder="e.g. State of NCT of Delhi" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="efile-desc">Prayer Summary & Ground Particulars</label>
+        <textarea id="efile-desc" class="form-control" rows="3" placeholder="Succinct factual foundation, interim relief prayed for, and statutory provisions invoked..."></textarea>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('efile-modal')">Cancel</button>
+        <button type="submit" class="btn btn-accent">
+          <i data-lucide="send"></i> Submit for Registry Scrutiny
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Upload Doc Modal -->
+<div id="upload-doc-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 520px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 8px; border-radius: var(--radius-full); background: rgba(37, 99, 235, 0.1); color: var(--color-info); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-1);">
+          <i data-lucide="file-up" style="width: 12px; height: 12px;"></i> Case Dossier
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">Upload Legal Document / Exhibit</h3>
+      </div>
+      <button onclick="closeModal('upload-doc-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="doc-upload-form" onsubmit="submitDocUpload(event)" class="modal-body" style="padding: var(--space-6);">
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="upload-case-id">Select Case ID <span style="color: var(--color-danger);">*</span></label>
+          <input type="number" id="upload-case-id" class="form-control" placeholder="e.g. 1" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="upload-doc-type">Document Category</label>
+          <select id="upload-doc-type" class="form-control">
+            <option value="Vakalatnama">Vakalatnama / Memo of Appearance</option>
+            <option value="Affidavit">Supporting Affidavit</option>
+            <option value="Evidence">Documentary Evidence / Annexure</option>
+            <option value="Written Arguments">Written Submissions / Brief</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Container for Lawyer Upload -->
+      <div class="form-group">
+        <label class="form-label">Attachment Document (PDF) <span style="color: var(--color-danger);">*</span></label>
+        <div class="dropzone-container" id="lawyer-dropzone-box" onclick="document.getElementById('upload-file').click()" style="padding: var(--space-6) var(--space-4);">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.25); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-2) auto; color: var(--color-info);">
+            <i data-lucide="file-plus" style="width: 22px; height: 22px;"></i>
+          </div>
+          <div style="font-size: 0.88rem; font-weight: 600; color: var(--color-text); margin-bottom: 2px;">
+            Drag PDF file here or click to browse
+          </div>
+          <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">
+            Certified electronic PDF files up to 25MB
+          </div>
+          
+          <input type="file" id="upload-file" class="form-control" accept=".pdf" required style="display: none;" onchange="updateLawyerFileChip(this)">
+          
+          <button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation(); document.getElementById('upload-file').click()">
+            <i data-lucide="upload"></i> Select Document
+          </button>
+          
+          <div id="lawyer-file-chip" style="display: none; margin-top: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); font-size: 0.8rem; color: var(--color-text); align-items: center; justify-content: space-between;">
+            <span style="display: flex; align-items: center; gap: 6px; font-weight: 500;">
+              <i data-lucide="file-check" style="width: 14px; height: 14px; color: var(--color-success);"></i>
+              <span id="lawyer-file-name">-</span>
+            </span>
+            <span class="badge badge-success" id="lawyer-file-size" style="font-size: 0.65rem;">-</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('upload-doc-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="upload-cloud"></i> Upload to Case File
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function submitEFile(e) {
+  e.preventDefault();
+  const title = document.getElementById('efile-title').value.trim();
+  const caseType = document.getElementById('efile-type').value;
+  const courtId = document.getElementById('efile-court').value;
+  const pet = document.getElementById('efile-pet').value.trim();
+  const resp = document.getElementById('efile-resp').value.trim();
+  const desc = document.getElementById('efile-desc').value.trim();
+
+  try {
+    const res = await fetch('/api/clerk/cases/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title, case_type: caseType, court_id: courtId,
+        petitioner_name: pet, respondent_name: resp, description: desc
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`Petition e-filed! Number: ${data.case_number} (Queued for Registrar Scrutiny)`, 'success', 6000);
+      closeModal('efile-modal');
+      setTimeout(() => location.reload(), 1500);
+    }
+  } catch(e) {
+    showToast('E-Filing submission failed.', 'danger');
+  }
+}
+
+async function submitDocUpload(e) {
+  e.preventDefault();
+  const caseId = document.getElementById('upload-case-id').value;
+  const docType = document.getElementById('upload-doc-type').value;
+  const fileInput = document.getElementById('upload-file');
+
+  if (!fileInput.files || !fileInput.files[0]) return;
+
+  const fd = new FormData();
+  fd.append('case_id', caseId);
+  fd.append('doc_type', docType);
+  fd.append('file', fileInput.files[0]);
+
+  try {
+    const res = await fetch('/api/clerk/documents/upload', {
+      method: 'POST',
+      body: fd
+    });
+    if (res.ok) {
+      showToast('Document uploaded and stamped in digital case file.', 'success');
+      closeModal('upload-doc-modal');
+      document.getElementById('doc-upload-form').reset();
+      document.getElementById('lawyer-file-chip').style.display = 'none';
+    }
+  } catch(e) {
+    showToast('Failed to upload document.', 'danger');
+  }
+}
+
+function updateLawyerFileChip(input) {
+  const chip = document.getElementById('lawyer-file-chip');
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    document.getElementById('lawyer-file-name').textContent = file.name;
+    document.getElementById('lawyer-file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    chip.style.display = 'flex';
+    if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+  } else {
+    chip.style.display = 'none';
+  }
+}
+
+function filterBriefs(status, btn) {
+  document.querySelectorAll('.filter-chips .filter-chip-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const rows = document.querySelectorAll('.brief-row');
+  rows.forEach(r => {
+    if (status === 'All' || r.getAttribute('data-status') === status) {
+      r.style.display = '';
+    } else {
+      r.style.display = 'none';
+    }
+  });
+
+  const cards = document.querySelectorAll('.brief-card');
+  cards.forEach(c => {
+    if (status === 'All' || c.getAttribute('data-status') === status) {
+      c.style.display = '';
+    } else {
+      c.style.display = 'none';
+    }
+  });
+}
+
+function switchBriefsView(view) {
+  const tableEl = document.getElementById('briefs-table-view');
+  const cardsEl = document.getElementById('briefs-cards-view');
+  const btnTable = document.getElementById('view-toggle-table');
+  const btnCards = document.getElementById('view-toggle-cards');
+
+  if (view === 'table') {
+    tableEl.style.display = 'block';
+    cardsEl.style.display = 'none';
+    btnTable.style.background = 'var(--color-surface)';
+    btnTable.style.boxShadow = 'var(--shadow-xs)';
+    btnTable.style.color = 'var(--color-text)';
+    btnCards.style.background = 'transparent';
+    btnCards.style.boxShadow = 'none';
+    btnCards.style.color = 'var(--color-text-muted)';
+  } else {
+    tableEl.style.display = 'none';
+    cardsEl.style.display = 'grid';
+    btnCards.style.background = 'var(--color-surface)';
+    btnCards.style.boxShadow = 'var(--shadow-xs)';
+    btnCards.style.color = 'var(--color-text)';
+    btnTable.style.background = 'transparent';
+    btnTable.style.boxShadow = 'none';
+    btnTable.style.color = 'var(--color-text-muted)';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initStatCountUp === 'function') initStatCountUp();
+
+  const dropBox = document.getElementById('lawyer-dropzone-box');
+  const fileInput = document.getElementById('upload-file');
+  if (dropBox && fileInput) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropBox.classList.add('drag-over');
+      }, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropBox.classList.remove('drag-over');
+      }, false);
+    });
+    dropBox.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        fileInput.files = files;
+        updateLawyerFileChip(fileInput);
+      }
+    }, false);
+  }
+});
+</script>
+{% endblock %}

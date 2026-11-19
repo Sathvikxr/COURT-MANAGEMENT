@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}NyayaDesk - Digital Court Management System{% endblock %}</title>
+
+  <!-- Google Fonts: Inter & Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- FullCalendar CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+  <!-- NyayaDesk Modern Design System (Linear / Stripe style) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="shortcut icon" href="{{ url_for('favicon') }}">
+  {% block styles %}{% endblock %}
+</head>
+<body>
+  <!-- Navigation Header (Glassmorphic Linear Style) -->
+  <header class="navbar">
+    <div class="navbar-brand">
+      <div class="court-emblem">§</div>
+      <a href="{{ url_for('main.index') }}" style="color: inherit; text-decoration: none; display: flex; flex-direction: column;">
+        <span style="letter-spacing: 0.04em; font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700;">NYAYADESK</span>
+        <span style="font-size: 0.65rem; font-family: var(--font-sans); color: var(--color-accent); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">
+          COURT MANAGEMENT SYSTEM
+        </span>
+      </a>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: var(--space-4);">
+      <div id="live-judicial-clock" class="tabular-nums" style="font-size: 0.8rem; color: var(--color-text-muted); font-family: var(--font-mono); display: flex; align-items: center; gap: 4px;"></div>
+      
+      <ul class="navbar-nav">
+        <li><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li>
+          <a href="{{ url_for('main.demo_guide') }}" style="color: var(--color-accent); font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+            <i data-lucide="book-open" style="width: 14px; height: 14px;"></i> Demo Guide
+          </a>
+        </li>
+        {% if current_user and current_user.is_authenticated %}
+          {% if current_user.status in ['pending_gov', 'pending_registrar'] %}
+            <li><a href="{{ url_for('auth.pending_approval') }}" class="btn btn-warning btn-sm">⏳ Verification Status</a></li>
+          {% else %}
+            {% if current_user.role == 'government' %}
+              <li><a href="{{ url_for('dashboards.government_dashboard') }}">Gov Oversight</a></li>
+            {% elif current_user.role == 'registrar' %}
+              <li><a href="{{ url_for('dashboards.registrar_dashboard') }}">Registry</a></li>
+            {% elif current_user.role == 'judge' %}
+              <li><a href="{{ url_for('dashboards.judge_dashboard') }}">Bench Chamber</a></li>
+            {% elif current_user.role == 'clerk' %}
+              <li><a href="{{ url_for('dashboards.clerk_dashboard') }}">Clerk Console</a></li>
+            {% elif current_user.role == 'lawyer' %}
+              <li><a href="{{ url_for('dashboards.lawyer_dashboard') }}">Advocate Desk</a></li>
+            {% elif current_user.role == 'litigant' %}
+              <li><a href="{{ url_for('dashboards.litigant_dashboard') }}">Citizen Portal</a></li>
+            {% elif current_user.role == 'police' %}
+              <li><a href="{{ url_for('dashboards.police_dashboard') }}">Police Portal</a></li>
+            {% endif %}
+          {% endif %}
+          <li><span class="badge badge-info">{{ current_user.role|upper }}</span></li>
+          <li><span style="font-size: 0.85rem; color: var(--color-text-secondary); font-weight: 500;">{{ current_user.full_name }}</span></li>
+          <li><a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Sign Out</a></li>
+        {% else %}
+          <li><a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-sm">Sign In</a></li>
+          <li><a href="{{ url_for('auth.register') }}" class="btn btn-accent btn-sm">Register / Apply</a></li>
+        {% endif %}
+      </ul>
+
+      <!-- Theme Switcher Button -->
+      <button id="theme-toggle-btn" class="icon-btn" onclick="toggleTheme()" title="Toggle Dark / Light Theme" aria-label="Toggle Dark / Light Theme">
+        <i data-lucide="moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container" style="padding-top: var(--space-4); padding-bottom: 0;">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
+            <i data-lucide="info" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+            <div style="flex: 1;">{{ message }}</div>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 1.25rem; color: inherit; cursor: pointer; line-height: 1;">&times;</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Content Area -->
+  <main style="flex: 1;">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Legal Footer -->
+  <footer>
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+      <div style="text-align: left;">
+        <strong style="color: var(--color-text); font-family: var(--font-serif); font-size: 0.95rem;">NyayaDesk Electronic Court Administration</strong>
+        <div style="font-size: 0.78rem; color: var(--color-text-muted); margin-top: 2px;">
+          Digital Case Filing, High Court & District Cause Lists, Certified Orders & Real-time Reminders.
+        </div>
+      </div>
+      <div style="font-size: 0.78rem; text-align: right; color: var(--color-text-muted);">
+        <div>Database Store: <code style="font-family: var(--font-mono); color: var(--color-accent);">court.db</code></div>
+        <div style="margin-top: 2px;">Python 3.10+ &bull; Flask 3.1 &bull; SQLite &bull; APScheduler</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core JavaScript -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  
+  <!-- Floating NyayaMitra AI Legal Help Widget -->
+  {% include "components/ai_chatbot.html" %}
+  
+  {% block scripts %}{% endblock %}
+</body>
+</html>

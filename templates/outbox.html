@@ -1,0 +1,604 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}SMS & Multi-Channel Outbox - NyayaDesk{% endblock %}
+
+{% block styles %}
+<style>
+/* Virtual Smartphone Bezel & Interface */
+.phone-mockup-wrapper {
+  background: linear-gradient(145deg, #1E293B, #0F172A);
+  border: 10px solid #334155;
+  border-radius: 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0,0,0,0.5);
+  width: 320px;
+  height: 580px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.phone-notch {
+  width: 120px;
+  height: 18px;
+  background: #334155;
+  margin: 0 auto;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.phone-speaker {
+  width: 40px;
+  height: 3px;
+  background: #64748B;
+  border-radius: 2px;
+}
+
+.phone-screen {
+  flex: 1;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.phone-status-bar {
+  padding: 4px 14px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.phone-chat-header {
+  padding: 8px 12px;
+  background: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-chat-body {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--color-bg);
+}
+
+.chat-bubble-sent {
+  align-self: flex-end;
+  max-width: 88%;
+  background: var(--color-primary);
+  color: #FFFFFF;
+  padding: 10px 12px;
+  border-radius: 14px 14px 2px 14px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  position: relative;
+}
+
+.chat-bubble-received {
+  align-self: flex-start;
+  max-width: 88%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 10px 12px;
+  border-radius: 14px 14px 14px 2px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.chat-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 0.65rem;
+  color: #94A3B8;
+}
+
+.phone-chat-footer {
+  padding: 8px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 6px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+
+  <!-- 1. PAGE HEADER (Linear / Stripe Style) -->
+  <div class="dashboard-page-header">
+    <div class="header-left">
+      <div class="header-eyebrow">
+        <span class="role-chip" style="background: rgba(37, 99, 235, 0.12); color: var(--color-info);">
+          <i data-lucide="radio" style="width: 12px; height: 12px;"></i> Mobile Telephony Gateway
+        </span>
+        <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
+          <span class="status-indicator live"></span> Twilio SMS & Meta Cloud API Multi-Channel Bridge
+        </span>
+      </div>
+      <h1 class="page-title">SMS & Multi-Channel Outbox Monitor</h1>
+      <p class="page-subtitle">
+        Real-time mobile gateway transmission logs with interactive virtual smartphone hardware preview and two-way reply simulation.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="fetchOutboxLogs()">
+        <i data-lucide="rotate-cw"></i> Refresh Outbox
+      </button>
+      <button class="btn btn-accent btn-sm" onclick="openRawLogModal()">
+        <i data-lucide="file-text"></i> View outbox.log
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. KPI METRICS ROW -->
+  <div class="kpi-grid" style="margin-bottom: var(--space-6);">
+    <!-- KPI 1 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Total Outbox Dispatches</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="send" style="width: 12px; height: 12px;"></i> Active
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-outbox-total" class="kpi-number" data-count="36">36</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 14L26 15L38 10L50 8L62 4" stroke="var(--color-primary-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Logged in C:\CourtMS\data\outbox.log</div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">SMS Carriers</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check" style="width: 12px; height: 12px;"></i> 100% Sent
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="24" style="color: var(--color-accent);">24</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 14L14 12L26 14L38 8L50 10L62 3" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Airtel, Jio & Twilio routes</div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">WhatsApp Delivered</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check-check" style="width: 12px; height: 12px;"></i> Read
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="12" style="color: var(--color-success);">12</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 16L14 14L26 10L38 11L50 6L62 2" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Meta Cloud Business templates</div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Carrier Latency</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="zap" style="width: 12px; height: 12px;"></i> 0.28s
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" style="font-size: 1.4rem;">Optimal</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 15L26 12L38 10L50 6L62 3" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Direct telecom pipeline health</div>
+    </div>
+  </div>
+
+  <!-- 3. MAIN SPLIT: SMARTPHONE PREVIEW (LEFT) + TRANSMISSION LOGS (RIGHT) -->
+  <div class="grid grid-cols-12" style="gap: var(--space-6); align-items: flex-start; margin-bottom: var(--space-8);">
+    
+    <!-- LEFT: Virtual Smartphone Live Simulator -->
+    <div style="grid-column: span 4;">
+      <div class="card" style="padding: var(--space-5); text-align: center; border: 1px solid var(--color-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+          <div style="text-align: left;">
+            <h4 style="font-size: 0.95rem; margin: 0; font-weight: 700; color: var(--color-text);">Virtual Device Preview</h4>
+            <span class="text-xs text-muted">Click any table row to load</span>
+          </div>
+          <span class="status-pill status-disposed" style="font-size: 0.68rem;">
+            <span class="status-dot"></span> Live 5G Carrier
+          </span>
+        </div>
+
+        <!-- Phone Chassis -->
+        <div class="phone-mockup-wrapper">
+          <div class="phone-notch">
+            <div class="phone-speaker"></div>
+          </div>
+          
+          <div class="phone-screen">
+            <div class="phone-status-bar">
+              <span id="phone-carrier">NyayaDesk 5G</span>
+              <span id="phone-clock">10:30 AM</span>
+              <span>100% 🔋</span>
+            </div>
+
+            <div class="phone-chat-header">
+              <div class="user-avatar" id="phone-avatar" style="width: 28px; height: 28px; font-size: 0.75rem; background: var(--color-primary); color: #FFF;">ND</div>
+              <div style="text-align: left; overflow: hidden; flex: 1;">
+                <div id="phone-recipient-name" style="font-size: 0.82rem; font-weight: 700; color: var(--color-text); white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">
+                  Ramesh Chandra Gupta
+                </div>
+                <div id="phone-recipient-contact" style="font-size: 0.68rem; color: var(--color-text-muted);">
+                  +91 98100 11008
+                </div>
+              </div>
+              <span id="phone-channel-badge" class="badge badge-accent" style="font-size: 0.65rem;">SMS</span>
+            </div>
+
+            <!-- Messages Stream inside Phone -->
+            <div class="phone-chat-body" id="phone-chat-body">
+              <div class="chat-bubble-sent">
+                <div>[NyayaDesk Judicial Alert]</div>
+                <div id="phone-bubble-text" style="margin-top: 4px;">
+                  Select any transmission from the Outbox Log table on the right to preview real-time SMS/WhatsApp rendering on this mobile device.
+                </div>
+                <div class="chat-meta">
+                  <span id="phone-bubble-time">Just now</span>
+                  <span style="color: #38BDF8;">✓✓</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2-Way Reply Simulation input directly on phone -->
+            <div style="padding: 6px 10px; background: var(--color-surface-subtle); border-top: 1px solid var(--color-border); font-size: 0.7rem; display: flex; gap: 4px; overflow-x: auto;">
+              <span style="color: var(--color-text-muted); font-size: 0.68rem; align-self: center;">Quick:</span>
+              <button class="btn btn-outline btn-sm" style="padding: 1px 6px; font-size: 0.68rem;" onclick="setSimulatorReply('CONFIRM')">CONFIRM</button>
+              <button class="btn btn-outline btn-sm" style="padding: 1px 6px; font-size: 0.68rem;" onclick="setSimulatorReply('ADJOURN')">ADJOURN</button>
+            </div>
+
+            <div class="phone-chat-footer">
+              <input type="text" id="phone-reply-input" class="form-control" style="font-size: 0.78rem; padding: 4px 8px; height: 32px;" placeholder="Type reply e.g. CONFIRM...">
+              <button class="btn btn-accent btn-sm" style="height: 32px; padding: 0 10px;" onclick="sendSimulatedReplyFromPhone()" title="Simulate Inbound SMS">
+                <i data-lucide="send" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: var(--space-3);">
+          💡 Type <strong>CONFIRM</strong> to test two-way attendance confirmation.
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Outbox Transmission Logs Table -->
+    <div style="grid-column: span 8;">
+      <div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--color-border);">
+        <div class="table-toolbar">
+          <div class="toolbar-left">
+            <div>
+              <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Multi-Channel Transmission Ledger</h3>
+              <div style="font-size: 0.78rem; color: var(--color-text-muted);">
+                Live stream from <code>C:\CourtMS\data\outbox.log</code> & notifications registry
+              </div>
+            </div>
+            <div class="filter-chips">
+              <button class="filter-chip-btn log-ch-btn active" data-ch="All" onclick="setLogChannel('All', this)">All</button>
+              <button class="filter-chip-btn log-ch-btn" data-ch="SMS" onclick="setLogChannel('SMS', this)">SMS</button>
+              <button class="filter-chip-btn log-ch-btn" data-ch="WhatsApp" onclick="setLogChannel('WhatsApp', this)">WhatsApp</button>
+              <button class="filter-chip-btn log-ch-btn" data-ch="Email" onclick="setLogChannel('Email', this)">Email</button>
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-outline btn-sm" onclick="openRawLogModal()">
+              <i data-lucide="terminal"></i> Raw Log
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+          <table class="table" id="outbox-main-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Timestamp</th>
+                <th style="width: 100px;">Channel</th>
+                <th>Recipient</th>
+                <th>Gateway & Case</th>
+                <th>Status</th>
+                <th style="width: 70px; text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="outbox-table-body">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                  Loading outbox transmissions...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal: Raw outbox.log Viewer -->
+<div id="raw-log-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 780px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(37, 99, 235, 0.1); color: var(--color-info); font-size: 0.72rem; font-weight: 700; margin-bottom: 2px;">
+          <i data-lucide="terminal" style="width: 12px; height: 12px;"></i> Filesystem Audit
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.2rem; color: var(--color-text);">C:\CourtMS\data\outbox.log</h3>
+      </div>
+      <button onclick="closeModal('raw-log-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <div style="margin-bottom: var(--space-3); font-size: 0.82rem; color: var(--color-text-muted);">
+      Direct filesystem verification of standard outbox transmission records written by <code>app.services.notifier</code>.
+    </div>
+    <textarea id="raw-log-textarea" class="form-control" style="font-family: var(--font-mono); font-size: 0.78rem; height: 380px; background: #0B132B; color: #64D2FF; white-space: pre; border-radius: var(--radius-md); padding: var(--space-4);" readonly>Loading log file...</textarea>
+    <div class="modal-footer" style="margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end;">
+      <button class="btn btn-primary" onclick="closeModal('raw-log-modal')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentLogChannel = 'All';
+let cachedOutboxLogs = [];
+
+function setLogChannel(ch, btn) {
+  currentLogChannel = ch;
+  document.querySelectorAll('.log-ch-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOutboxTable();
+}
+
+async function fetchOutboxLogs() {
+  const tbody = document.getElementById('outbox-table-body');
+  try {
+    const res = await fetch('/api/outbox/logs?limit=100');
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    cachedOutboxLogs = data.logs || [];
+    renderOutboxTable();
+    
+    // Auto-select first item if available
+    if (cachedOutboxLogs.length > 0) {
+      previewInPhone(cachedOutboxLogs[0]);
+    }
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--color-danger); padding: 2rem;">Error retrieving outbox logs.</td></tr>';
+  }
+}
+
+function renderOutboxTable() {
+  const tbody = document.getElementById('outbox-table-body');
+  const filtered = currentLogChannel === 'All' 
+    ? cachedOutboxLogs 
+    : cachedOutboxLogs.filter(l => l.channel === currentLogChannel);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+          No ${currentLogChannel} messages found in the outbox. Trigger a reminder or run the automated scanner.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((l, index) => {
+    const channelBadges = {
+      'SMS': 'badge-accent',
+      'WhatsApp': 'badge-success',
+      'Email': 'badge-info',
+      'In-App': 'badge-primary'
+    };
+
+    const statusPillClasses = {
+      'Delivered': 'status-disposed',
+      'Sent': 'status-hearing',
+      'Queued': 'status-registered',
+      'Failed': 'status-filed'
+    };
+
+    return `
+      <tr style="cursor: pointer; transition: background 0.15s ease;" onclick="previewInPhone(cachedOutboxLogs[${index}])" onmouseover="this.style.background='var(--color-surface-subtle)'" onmouseout="this.style.background='transparent'">
+        <td style="font-size: 0.78rem; font-family: var(--font-mono);">${l.sent_at}</td>
+        <td><span class="badge ${channelBadges[l.channel] || 'badge-primary'}" style="font-size: 0.72rem;">${l.channel}</span></td>
+        <td>
+          <div style="font-weight: 600; font-size: 0.85rem; color: var(--color-text);">${l.recipient_name}</div>
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">${l.recipient_contact} &bull; ${l.recipient_role}</div>
+        </td>
+        <td>
+          <div style="font-size: 0.8rem; font-weight: 600; color: var(--color-primary-dark);">${l.case_number || 'General Alert'}</div>
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">Gateway: <code>${l.provider}</code></div>
+        </td>
+        <td>
+          <span class="status-pill ${statusPillClasses[l.status] || 'status-registered'}">
+            <span class="status-dot"></span> ${l.status}
+          </span>
+        </td>
+        <td style="text-align: right;">
+          <button class="btn btn-outline btn-sm" style="padding: 2px 8px; font-size: 0.72rem;" onclick="event.stopPropagation(); previewInPhone(cachedOutboxLogs[${index}])">
+            View
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+}
+
+function previewInPhone(logItem) {
+  if (!logItem) return;
+
+  document.getElementById('phone-recipient-name').textContent = logItem.recipient_name;
+  document.getElementById('phone-recipient-contact').textContent = logItem.recipient_contact;
+  document.getElementById('phone-avatar').textContent = logItem.recipient_name.substring(0, 2).toUpperCase();
+  document.getElementById('phone-channel-badge').textContent = logItem.channel;
+
+  const chatBody = document.getElementById('phone-chat-body');
+  chatBody.innerHTML = `
+    <div class="chat-bubble-sent">
+      <div style="font-weight: 700; margin-bottom: 4px; font-size: 0.8rem;">[NyayaDesk Judicial Alert]</div>
+      <div style="white-space: pre-line;">${logItem.message}</div>
+      <div class="chat-meta">
+        <span>${logItem.sent_at.split(',')[1] || logItem.sent_at}</span>
+        <span style="color: #38BDF8;">✓✓</span>
+      </div>
+    </div>
+  `;
+}
+
+function setSimulatorReply(text) {
+  document.getElementById('phone-reply-input').value = text;
+}
+
+async function sendSimulatedReplyFromPhone() {
+  const text = document.getElementById('phone-reply-input').value.trim();
+  const contact = document.getElementById('phone-recipient-contact').textContent.trim();
+
+  if (!text) {
+    showToast('Please type a reply message (e.g. CONFIRM)', 'warning');
+    return;
+  }
+
+  // Append user bubble inside phone
+  const chatBody = document.getElementById('phone-chat-body');
+  chatBody.innerHTML += `
+    <div class="chat-bubble-received">
+      <div>${text}</div>
+      <div class="chat-meta" style="color: var(--color-text-muted);">
+        <span>Just now</span>
+      </div>
+    </div>
+  `;
+  document.getElementById('phone-reply-input').value = '';
+  chatBody.scrollTop = chatBody.scrollHeight;
+
+  try {
+    const res = await fetch('/api/notifications/simulate-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender_contact: contact, message_text: text })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      showToast(result.message, 'success', 5000);
+      
+      // Auto-reply confirmation bubble
+      setTimeout(() => {
+        chatBody.innerHTML += `
+          <div class="chat-bubble-sent" style="background: #047857;">
+            <div><strong>NyayaDesk Confirmation</strong></div>
+            <div style="margin-top: 3px;">Thank you. Your attendance has been officially marked <strong>CONFIRMED</strong> on the Court Master's docket.</div>
+            <div class="chat-meta">
+              <span>Just now</span>
+              <span style="color: #38BDF8;">✓✓</span>
+            </div>
+          </div>
+        `;
+        chatBody.scrollTop = chatBody.scrollHeight;
+        fetchOutboxLogs();
+      }, 600);
+    } else {
+      showToast(result.message || 'Simulation processed', 'info');
+    }
+  } catch (err) {
+    showToast('Error communicating with reply simulator', 'danger');
+  }
+}
+
+async function openRawLogModal() {
+  openModal('raw-log-modal');
+  const txt = document.getElementById('raw-log-textarea');
+  txt.value = 'Reading C:\\CourtMS\\data\\outbox.log...';
+
+  // Read the outbox logs and format them
+  try {
+    const res = await fetch('/api/outbox/logs?limit=50');
+    if (res.ok) {
+      const data = await res.json();
+      const logs = data.logs || [];
+      if (logs.length === 0) {
+        txt.value = 'No entries yet in outbox.log. Trigger a reminder to generate entries.';
+      } else {
+        txt.value = logs.map(l => (
+          `================================================================================\n` +
+          `[${l.sent_at}] [${l.channel}] TO: ${l.recipient_contact} (Name: ${l.recipient_name} | Role: ${l.recipient_role})\n` +
+          `PROVIDER: ${l.provider} | STATUS: ${l.status.toUpperCase()}\n` +
+          `CASE: ${l.case_number || 'N/A'}\n` +
+          `--------------------------------------------------------------------------------\n` +
+          `${l.message}\n` +
+          `================================================================================\n`
+        )).join('\n');
+      }
+    }
+  } catch (err) {
+    txt.value = 'Failed to load log entries.';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initStatCountUp === 'function') initStatCountUp();
+  fetchOutboxLogs();
+  // Live clock in phone mockup
+  setInterval(() => {
+    const now = new Date();
+    const clk = document.getElementById('phone-clock');
+    if (clk) clk.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }, 1000);
+});
+</script>
+{% endblock %}

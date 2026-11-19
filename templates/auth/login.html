@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In - NyayaDesk Judicial Portal{% endblock %}
+
+{% block styles %}
+<style>
+.login-split-wrapper {
+  display: flex;
+  min-height: calc(100vh - 65px);
+  width: 100%;
+}
+
+.login-brand-side {
+  flex: 1.1;
+  background: radial-gradient(circle at 20% 20%, rgba(201, 162, 75, 0.12), transparent 45%),
+              radial-gradient(circle at 80% 80%, rgba(37, 99, 235, 0.15), transparent 50%),
+              linear-gradient(145deg, #071322 0%, #0B1F3A 40%, #112644 75%, #0B1728 100%);
+  color: #FFFFFF;
+  padding: var(--space-12) var(--space-10);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.login-brand-side::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+.login-form-side {
+  flex: 0.9;
+  min-width: 440px;
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-10) var(--space-8);
+  position: relative;
+}
+
+.login-card-inner {
+  width: 100%;
+  max-width: 460px;
+}
+
+.feature-pill-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all var(--transition-fast);
+}
+
+.feature-pill-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(201, 162, 75, 0.3);
+  transform: translateX(4px);
+}
+
+.feature-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(201, 162, 75, 0.15);
+  border: 1px solid rgba(201, 162, 75, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent-light);
+  flex-shrink: 0;
+}
+
+.password-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+.password-toggle-btn:hover {
+  color: var(--color-text);
+}
+
+@media (max-width: 960px) {
+  .login-split-wrapper {
+    flex-direction: column;
+  }
+  .login-brand-side {
+    padding: var(--space-8) var(--space-6);
+  }
+  .login-form-side {
+    min-width: 100%;
+    padding: var(--space-8) var(--space-4);
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-split-wrapper">
+
+  <!-- Left: Brand Panel with Gradient Mesh Background -->
+  <div class="login-brand-side">
+    <div style="position: relative; z-index: 2;">
+      <!-- Judicial OS Badge -->
+      <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px 12px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.15); border: 1px solid rgba(201, 162, 75, 0.3); color: var(--color-accent-light); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-6);">
+        <span class="pulse-dot"></span> Official Judicial Network
+      </div>
+
+      <!-- Hero Heading -->
+      <h1 class="heading-serif" style="font-size: 2.35rem; line-height: 1.2; color: #FFFFFF; margin-bottom: var(--space-3); letter-spacing: -0.02em;">
+        The Operating System for <span style="background: linear-gradient(135deg, #E5C05B 0%, #FFFFFF 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Modern Courts</span>.
+      </h1>
+      <p style="color: #94A3B8; font-size: 0.95rem; line-height: 1.6; max-width: 460px; margin-bottom: var(--space-8);">
+        Unified digital infrastructure connecting the Bench, Registry, Bar, Citizens, and Law Enforcement into one synchronized judicial ledger.
+      </p>
+
+      <!-- 3 Short Feature Highlights -->
+      <div style="display: flex; flex-direction: column; gap: var(--space-3); max-width: 480px;">
+        <div class="feature-pill-item">
+          <div class="feature-icon-badge">
+            <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <div style="font-weight: 600; font-size: 0.88rem; color: #F8FAFC;">Cryptographic SHA-256 Orders</div>
+            <div style="font-size: 0.78rem; color: #94A3B8; line-height: 1.4; margin-top: 2px;">
+              Every judicial order and judgment is cryptographically sealed with tamper-evident digital hashes.
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-pill-item">
+          <div class="feature-icon-badge">
+            <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <div style="font-weight: 600; font-size: 0.88rem; color: #F8FAFC;">Real-Time Cause Lists & E-Filing</div>
+            <div style="font-size: 0.78rem; color: #94A3B8; line-height: 1.4; margin-top: 2px;">
+              Smart courtroom roster scheduling, live hearing states, and automated registry scrutiny workflows.
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-pill-item">
+          <div class="feature-icon-badge">
+            <i data-lucide="bell-ring" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <div style="font-weight: 600; font-size: 0.88rem; color: #F8FAFC;">Automated Multichannel Reminders</div>
+            <div style="font-size: 0.78rem; color: #94A3B8; line-height: 1.4; margin-top: 2px;">
+              Dispatches automated alerts via SMS, WhatsApp, Email and In-App 7 days, 24 hours, and 2 hours before hearings.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Footnote -->
+    <div style="position: relative; z-index: 2; margin-top: var(--space-8); padding-top: var(--space-4); border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: #64748B;">
+      <span style="display: flex; align-items: center; gap: 6px;">
+        <i data-lucide="lock" style="width: 14px; height: 14px; color: var(--color-accent);"></i> PBKDF2 SHA-256 Auth
+      </span>
+      <span>Strict Role-Based Access Control (RBAC)</span>
+    </div>
+  </div>
+
+  <!-- Right: Clean Form Card in Linear Style -->
+  <div class="login-form-side">
+    <div class="login-card-inner fade-in">
+      
+      <!-- Card Header -->
+      <div style="margin-bottom: var(--space-6);">
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--space-1); letter-spacing: -0.02em;">
+          Sign in to NyayaDesk
+        </h2>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted);">
+          Enter your authorized judicial credentials or select a 1-click demo role below.
+        </p>
+      </div>
+
+      <!-- Login Form -->
+      <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next', '')) }}" id="login-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Email Field -->
+        <div class="form-group">
+          <label class="form-label" for="email">Official / Registered Email</label>
+          <div class="search-input-wrapper">
+            <i data-lucide="mail"></i>
+            <input type="email" id="email" name="email" class="form-control" 
+                   style="padding-left: 2.5rem;" 
+                   placeholder="e.g. gov@nyaya.in, judge1@nyaya.in" required autofocus>
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-1);">
+            <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
+            <a href="{{ url_for('auth.forgot_password') }}" style="font-size: 0.78rem; font-weight: 500; color: var(--color-primary-light);">
+              Forgot Password?
+            </a>
+          </div>
+          <div class="password-input-wrap search-input-wrapper">
+            <i data-lucide="lock"></i>
+            <input type="password" id="password" name="password" class="form-control" 
+                   style="padding-left: 2.5rem; padding-right: 2.5rem;" 
+                   placeholder="••••••••" required>
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" title="Toggle password visibility">
+              <i data-lucide="eye" id="password-eye-icon" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember Me & Security Meta -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; cursor: pointer; color: var(--color-text-secondary); user-select: none;">
+            <input type="checkbox" name="remember" value="1" style="accent-color: var(--color-accent); cursor: pointer;">
+            Remember session on this workstation
+          </label>
+          <span style="font-size: 0.72rem; color: var(--color-text-muted); font-family: var(--font-mono);">
+            TLS 1.3
+          </span>
+        </div>
+
+        <!-- Submit Button -->
+        <div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 0.95rem; font-weight: 600; justify-content: center;">
+            <i data-lucide="shield-check"></i> Sign In to Judicial Workspace
+          </button>
+        </div>
+      </form>
+
+      <!-- Register Link -->
+      <div style="text-align: center; margin-top: var(--space-4); font-size: 0.85rem; color: var(--color-text-muted);">
+        Don't have an authorized account? 
+        <a href="{{ url_for('auth.register') }}" style="font-weight: 600; color: var(--color-primary-light);">
+          Apply for Bench Access &rarr;
+        </a>
+      </div>
+
+      <!-- 1-Click Demo Logins Section -->
+      <div style="margin-top: var(--space-6); border-top: 1px solid var(--color-border); padding-top: var(--space-5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+          <span style="font-size: 0.72rem; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em;">
+            1-Click Demo Accounts (7 Roles)
+          </span>
+          <span class="badge badge-warning" style="font-size: 0.65rem;">Seeded Demo Data</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+          <a href="{{ url_for('auth.demo_switch', role='government') }}" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center;" title="Ministry of Law / Gov Oversight">
+            🏛️ Gov
+          </a>
+          <a href="{{ url_for('auth.demo_switch', role='registrar') }}" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center;" title="Registrar General">
+            📜 Registrar
+          </a>
+          <a href="{{ url_for('auth.demo_switch', role='judge') }}" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center;" title="Judicial Bench">
+            ⚖️ Judge
+          </a>
+          <a href="{{ url_for('auth.demo_switch', role='clerk') }}" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center;" title="Bench Reader / Clerk">
+            🖥️ Clerk
+          </a>
+          <a href="{{ url_for('auth.demo_switch', role='lawyer') }}" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center;" title="Advocate on Record">
+            💼 Lawyer
+          </a>
+          <a href="{{ url_for('auth.demo_switch', role='litigant') }}" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center;" title="Citizen Litigant">
+            👤 Litigant
+          </a>
+          <a href="{{ url_for('auth.demo_switch', role='police') }}" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center;" title="Police / IO">
+            👮 Police
+          </a>
+          <a href="javascript:void(0)" onclick="fillCredentials('judge_pending1@nyaya.in', 'Judge@12345')" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 0.35rem; justify-content: center; border-color: var(--color-warning); color: var(--color-warning);" title="Pending Application Review">
+            ⏳ Pending
+          </a>
+        </div>
+
+        <div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: var(--space-2); text-align: center;">
+          Password for all demo accounts: <code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">Role@12345</code> (e.g. <code>Gov@12345</code>)
+        </div>
+
+        <div style="margin-top: var(--space-4);">
+          <a href="{{ url_for('main.demo_guide') }}" class="btn btn-outline btn-sm" style="width: 100%; border-color: var(--color-accent); color: var(--color-accent); font-size: 0.78rem; font-weight: 600; justify-content: center;">
+            <i data-lucide="book-open" style="width: 14px; height: 14px;"></i> View Full Demo Guide & Credential Directory &rarr;
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function fillCredentials(email, pwd) {
+  document.getElementById('email').value = email;
+  document.getElementById('password').value = pwd;
+}
+
+function togglePasswordVisibility() {
+  const pwdInput = document.getElementById('password');
+  const eyeIcon = document.getElementById('password-eye-icon');
+  if (pwdInput.type === 'password') {
+    pwdInput.type = 'text';
+    eyeIcon.setAttribute('data-lucide', 'eye-off');
+  } else {
+    pwdInput.type = 'password';
+    eyeIcon.setAttribute('data-lucide', 'eye');
+  }
+  lucide.createIcons();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const email = params.get('email');
+  const pwd = params.get('pwd');
+  if (email) document.getElementById('email').value = email;
+  if (pwd) document.getElementById('password').value = pwd;
+  lucide.createIcons();
+});
+</script>
+{% endblock %}

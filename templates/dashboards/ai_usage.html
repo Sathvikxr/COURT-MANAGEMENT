@@ -1,0 +1,362 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}AI Intelligence & Usage Telemetry - NyayaDesk{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="dashboard-page-header">
+  <div class="dashboard-title-group">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2);">
+      <span class="pulse-dot"></span> Judicial AI Governance &bull; Responsible AI Telemetry
+    </div>
+    <h2>AI Intelligence Observability & Cost Control</h2>
+    <p>Operational health monitoring, prompt telemetry, provider failover logs, and administrative quota governance.</p>
+  </div>
+
+  <div class="dashboard-actions-group">
+    <span class="badge {{ 'badge-success' if status_info.mode == 'live' else 'badge-accent' }}" style="font-size: 0.85rem; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px;">
+      <i data-lucide="{{ 'zap' if status_info.mode == 'live' else 'cpu' }}" style="width: 16px; height: 16px;"></i>
+      <span>{{ 'LIVE GEMINI ENGINE' if status_info.mode == 'live' else 'OFFLINE DEMO ENGINE' }}</span>
+    </span>
+  </div>
+</div>
+
+<!-- 1. KPI SUMMARY CARDS -->
+<div class="grid grid-cols-4" style="margin-bottom: var(--space-6);">
+  <!-- Active Provider & Model -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Active Engine</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-primary);">
+        <i data-lucide="cpu" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" style="font-size: 1.15rem; font-weight: 700; text-transform: capitalize;">
+        {{ status_info.provider }}
+      </div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      Model: <code style="font-family: var(--font-mono); color: var(--color-accent);">{{ status_info.model }}</code>
+    </div>
+  </div>
+
+  <!-- Total Requests -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Total Requests</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-accent);">
+        <i data-lucide="activity" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ status_info.total_requests }}</div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      Live: <strong>{{ status_info.live_requests }}</strong> &bull; Demo: <strong>{{ status_info.demo_requests }}</strong>
+    </div>
+  </div>
+
+  <!-- Fallbacks & Resiliency -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Failover Fallbacks</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-warning);">
+        <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ status_info.fallback_requests }}</div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      Gracefully rescued by Demo Engine
+    </div>
+  </div>
+
+  <!-- Average Latency -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Average Latency</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-success);">
+        <i data-lucide="gauge" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ status_info.average_latency_ms }} <span style="font-size: 0.85rem; font-weight: normal; color: var(--color-text-muted);">ms</span></div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      Per prompt execution
+    </div>
+  </div>
+</div>
+
+<!-- 2. ADMINISTRATIVE COST CONTROL & KILL SWITCH -->
+<div class="card" style="margin-bottom: var(--space-6); border-left: 4px solid {{ 'var(--color-danger)' if status_info.kill_switch_active else 'var(--color-accent)' }};">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3);">
+    <div>
+      <h3 style="margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="sliders" style="width: 18px; height: 18px; color: var(--color-accent);"></i>
+        AI Quota & Cost Control Governance
+      </h3>
+      <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: var(--color-text-muted);">
+        Enforce strict daily API caps and administrative kill switches to prevent unbudgeted token consumption.
+      </p>
+    </div>
+
+    <!-- Kill Switch Button -->
+    {% if current_user.role in ['government', 'registrar'] %}
+    <div>
+      {% if status_info.kill_switch_active %}
+        <button class="btn btn-danger btn-sm" onclick="toggleKillSwitch(false)">
+          <i data-lucide="power"></i> Reactivate AI Subsystem
+        </button>
+      {% else %}
+        <button class="btn btn-outline btn-sm" style="color: var(--color-danger); border-color: var(--color-danger);" onclick="toggleKillSwitch(true)">
+          <i data-lucide="power-off"></i> Emergency Kill Switch
+        </button>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card-body" style="padding-top: var(--space-4);">
+    <div class="grid grid-cols-2" style="gap: var(--space-6); align-items: center;">
+      <!-- Daily Quota Meter -->
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px;">
+          <span>Daily Quota Consumption (UTC Today):</span>
+          <strong>{{ status_info.today_request_count }} / {{ status_info.daily_request_cap }} Requests</strong>
+        </div>
+        {% set pct = [((status_info.today_request_count / (status_info.daily_request_cap if status_info.daily_request_cap > 0 else 1)) * 100)|round|int, 100]|min %}
+        <div style="width: 100%; height: 10px; background: var(--color-surface-subtle); border-radius: 5px; overflow: hidden; border: 1px solid var(--color-border);">
+          <div style="width: {{ pct }}%; height: 100%; background: {{ 'var(--color-danger)' if pct >= 90 else ('var(--color-warning)' if pct >= 75 else 'var(--color-accent)') }}; transition: width 0.3s ease;"></div>
+        </div>
+        <div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 4px;">
+          Once the cap is reached, calls automatically revert to the offline Demo provider without application disruption.
+        </div>
+      </div>
+
+      <!-- Settings Adjustment Form -->
+      {% if current_user.role in ['government', 'registrar'] %}
+      <form id="ai-settings-form" onsubmit="updateDailyCap(event)" style="display: flex; gap: var(--space-3); align-items: flex-end;">
+        <div style="flex: 1;">
+          <label for="daily_request_cap" style="font-size: 0.78rem; font-weight: 600; display: block; margin-bottom: 4px;">
+            Set Daily Request Cap:
+          </label>
+          <input type="number" id="daily_request_cap" name="daily_request_cap" class="form-input" min="10" max="10000" value="{{ status_info.daily_request_cap }}" required style="font-size: 0.85rem; padding: 6px 10px;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="white-space: nowrap;">
+          <i data-lucide="save"></i> Update Cap
+        </button>
+      </form>
+      {% else %}
+      <div style="font-size: 0.8rem; color: var(--color-text-muted); padding: var(--space-3); background: var(--color-surface-subtle); border-radius: var(--radius-sm);">
+        <i data-lucide="lock" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;"></i> Quota policy modification restricted to Ministry Governance & High Court Registry.
+      </div>
+      {% endif %}
+    </div>
+
+    {% if status_info.last_error %}
+    <div class="alert alert-warning" style="margin-top: var(--space-4); margin-bottom: 0; font-size: 0.8rem;">
+      <i data-lucide="alert-triangle"></i>
+      <div><strong>Last Upstream Health Note:</strong> {{ status_info.last_error }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 3. USAGE BY FEATURE -->
+<div class="card" style="margin-bottom: var(--space-6);">
+  <div class="card-header">
+    <h3 style="margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="pie-chart" style="width: 18px; height: 18px; color: var(--color-accent);"></i>
+      AI Feature Distribution & Reliability
+    </h3>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Feature Domain</th>
+            <th style="text-align: right;">Total Requests</th>
+            <th style="text-align: right;">Avg Latency</th>
+            <th style="text-align: center;">Failovers</th>
+            <th style="text-align: center;">Failures</th>
+            <th style="text-align: center;">Health Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if feature_stats %}
+            {% for item in feature_stats %}
+            <tr>
+              <td>
+                <strong style="text-transform: capitalize; color: var(--color-text);">{{ item.feature.replace('_', ' ') }}</strong>
+              </td>
+              <td style="text-align: right;" class="tabular-nums">{{ item.total }}</td>
+              <td style="text-align: right;" class="tabular-nums">{{ item.avg_lat }} ms</td>
+              <td style="text-align: center;">
+                {% if item.fallbacks > 0 %}
+                  <span class="badge badge-warning">{{ item.fallbacks }}</span>
+                {% else %}
+                  <span style="color: var(--color-text-muted);">&mdash;</span>
+                {% endif %}
+              </td>
+              <td style="text-align: center;">
+                {% if item.failures > 0 %}
+                  <span class="badge badge-danger">{{ item.failures }}</span>
+                {% else %}
+                  <span style="color: var(--color-text-muted);">0</span>
+                {% endif %}
+              </td>
+              <td style="text-align: center;">
+                <span class="badge badge-success">Nominal</span>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--color-text-muted); padding: var(--space-6);">
+                No AI feature invocations recorded yet in the current operational cycle.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 4. RECENT AUDIT TRAIL LOGS -->
+<div class="card">
+  <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="margin: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="list" style="width: 18px; height: 18px; color: var(--color-accent);"></i>
+      Recent AI Request Logs (ai_logs)
+    </h3>
+    <span style="font-size: 0.75rem; color: var(--color-text-muted);">Last 50 recorded invocations</span>
+  </div>
+  <div class="card-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Time (UTC)</th>
+            <th>Feature</th>
+            <th>Provider / Model</th>
+            <th>Latency</th>
+            <th>Tokens</th>
+            <th>Status</th>
+            <th>Fallback</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if recent_logs %}
+            {% for log in recent_logs %}
+            <tr>
+              <td style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--color-text-muted);">
+                {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+              </td>
+              <td>
+                <span class="badge badge-outline" style="font-size: 0.7rem;">{{ log.feature }}</span>
+              </td>
+              <td style="font-size: 0.8rem;">
+                <strong>{{ log.provider }}</strong> <span style="color: var(--color-text-muted);">({{ log.model }})</span>
+              </td>
+              <td class="tabular-nums" style="font-size: 0.8rem;">
+                {{ "%.1f"|format(log.latency_ms) }} ms
+              </td>
+              <td class="tabular-nums" style="font-size: 0.78rem; color: var(--color-text-muted);">
+                {{ log.total_tokens if log.total_tokens else '-' }}
+              </td>
+              <td>
+                {% if log.status == 'success' %}
+                  <span class="badge badge-success">Success</span>
+                {% elif log.status == 'cached' %}
+                  <span class="badge badge-info">Cached</span>
+                {% elif log.status == 'throttled' %}
+                  <span class="badge badge-warning">Throttled</span>
+                {% else %}
+                  <span class="badge badge-danger">{{ log.status }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if log.fallback_used %}
+                  <span class="badge badge-warning">Yes (Demo)</span>
+                {% else %}
+                  <span style="color: var(--color-text-muted);">No</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--color-text-muted); padding: var(--space-6);">
+                No AI activity logged yet.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleKillSwitch(disabled) {
+  const confirmMsg = disabled 
+    ? 'Are you sure you want to trigger the Emergency AI Kill Switch? This will redirect all AI features to the offline fallback engine.'
+    : 'Reactivate the AI subsystem?';
+  
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const res = await fetch('/api/admin/ai-settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ kill_switch: disabled })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || 'AI settings updated successfully');
+      window.location.reload();
+    } else {
+      alert(data.error || 'Failed to update AI settings');
+    }
+  } catch (err) {
+    alert('Network error updating AI settings');
+  }
+}
+
+async function updateDailyCap(e) {
+  e.preventDefault();
+  const capVal = document.getElementById('daily_request_cap').value;
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const res = await fetch('/api/admin/ai-settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ daily_request_cap: parseInt(capVal, 10) })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('Daily request cap updated successfully.');
+      window.location.reload();
+    } else {
+      alert(data.error || 'Failed to update daily request cap');
+    }
+  } catch (err) {
+    alert('Network error updating cap');
+  }
+}
+</script>
+{% endblock %}

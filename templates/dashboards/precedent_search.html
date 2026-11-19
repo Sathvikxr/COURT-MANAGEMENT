@@ -1,0 +1,228 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Semantic Case-Law & Precedent Search - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="dashboard-page-header">
+  <div class="dashboard-title-group">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2);">
+      <span class="pulse-dot"></span> Judicial Research &bull; Semantic Precedent Engine
+    </div>
+    <h2>Semantic Case-Law & Precedent Search</h2>
+    <p>Natural-language legal vector search across synthetic precedents, ratio decidendi, and statutory provisions.</p>
+  </div>
+
+  <div class="dashboard-actions-group">
+    <span class="badge badge-accent" style="font-size: 0.75rem; padding: 6px 12px;">
+      <i data-lucide="database" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+      30 Synthetic Precedents Indexed
+    </span>
+  </div>
+</div>
+
+<!-- Synthetic Data Notice -->
+<div class="alert alert-info" style="margin-bottom: var(--space-5); display: flex; align-items: center; justify-content: space-between;">
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <i data-lucide="shield-alert" style="width: 20px; height: 20px; color: var(--color-accent);"></i>
+    <span style="font-size: 0.84rem;">
+      <strong>Training & Synthetic Notice:</strong> All precedents in this judicial library are simulated and fictional. Do not cite synthetic citations before real tribunals.
+    </span>
+  </div>
+  <span class="badge badge-outline" style="font-size: 0.68rem;">⚖️ AI-generated, review before use</span>
+</div>
+
+<!-- Search Query Box & Filter Form -->
+<div class="card" style="margin-bottom: var(--space-6); padding: var(--space-5);">
+  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 280px; position: relative;">
+      <input type="text" id="precedent-query" class="form-control" style="padding-left: 38px; font-size: 0.95rem; height: 44px;" placeholder="Search legal issue e.g. 'dishonour of cheque statutory notice delay' or 'anticipatory bail guidelines'..." value="{{ initial_query or '' }}" onkeydown="if(event.key==='Enter') executePrecedentSearch()">
+      <div style="position: absolute; left: 12px; top: 12px; color: var(--color-text-muted);">
+        <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+      </div>
+    </div>
+
+    <select id="case-type-filter" class="form-control" style="width: 180px; height: 44px;">
+      <option value="">All Case Types</option>
+      <option value="Civil">Civil Appeals & Suits</option>
+      <option value="Criminal">Criminal Matters</option>
+      <option value="Writ">Writ Petitions</option>
+      <option value="Commercial">Commercial Disputes</option>
+      <option value="Arbitration">Arbitration</option>
+    </select>
+
+    <button id="search-btn" class="btn btn-primary" onclick="executePrecedentSearch()" style="height: 44px; padding: 0 var(--space-5); display: inline-flex; align-items: center; gap: 8px;">
+      <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+      <span>Semantic Search</span>
+    </button>
+  </div>
+
+  <!-- Quick Query Suggestion Chips -->
+  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: var(--space-3); align-items: center;">
+    <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 600;">Suggested Queries:</span>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.72rem; padding: 3px 8px;" onclick="applyQuickQuery('Section 138 NI Act statutory notice period compliance')">Sec 138 Notice Period</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.72rem; padding: 3px 8px;" onclick="applyQuickQuery('Adverse possession hostile animus requirement')">Adverse Possession</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.72rem; padding: 3px 8px;" onclick="applyQuickQuery('Anticipatory bail personal liberty Section 438 CrPC')">Anticipatory Bail</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.72rem; padding: 3px 8px;" onclick="applyQuickQuery('Time is essence in commercial contract specific performance')">Time Essence Contract</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.72rem; padding: 3px 8px;" onclick="applyQuickQuery('Writ of Mandamus failure of public statutory duty')">Mandamus Public Duty</button>
+  </div>
+</div>
+
+<!-- Loading Shimmer State -->
+<div id="search-loading" style="display: none; margin-bottom: var(--space-6);">
+  <div class="card" style="padding: var(--space-5);">
+    <div style="font-size: 0.85rem; color: var(--color-accent); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="loader" class="spin" style="width: 16px; height: 16px;"></i> Computing vector cosine similarity across judicial precedents...
+    </div>
+    <div class="ai-shimmer" style="height: 24px; width: 65%; margin-bottom: 10px;"></div>
+    <div class="ai-shimmer" style="height: 16px; width: 85%; margin-bottom: 8px;"></div>
+    <div class="ai-shimmer" style="height: 16px; width: 45%; margin-bottom: 20px;"></div>
+
+    <div class="ai-shimmer" style="height: 24px; width: 60%; margin-bottom: 10px;"></div>
+    <div class="ai-shimmer" style="height: 16px; width: 90%; margin-bottom: 8px;"></div>
+  </div>
+</div>
+
+<!-- Search Results Container -->
+<div id="search-results-area">
+  <!-- Default Initial State -->
+  <div id="search-empty-state" class="card" style="text-align: center; padding: var(--space-8); color: var(--color-text-muted);">
+    <i data-lucide="book-open" style="width: 48px; height: 48px; margin: 0 auto 12px; opacity: 0.4;"></i>
+    <h3 style="font-size: 1.1rem; color: var(--color-text);">Search Synthetic Legal Precedents</h3>
+    <p style="font-size: 0.85rem; max-width: 500px; margin: 0 auto;">
+      Enter a query or select a suggestion chip above to perform meaning-based legal vector retrieval.
+    </p>
+  </div>
+
+  <div id="results-list" style="display: flex; flex-direction: column; gap: var(--space-4);"></div>
+</div>
+
+<script>
+function applyQuickQuery(text) {
+  document.getElementById('precedent-query').value = text;
+  executePrecedentSearch();
+}
+
+async function executePrecedentSearch() {
+  const query = document.getElementById('precedent-query').value.trim();
+  const caseType = document.getElementById('case-type-filter').value;
+  if (!query) return;
+
+  const loading = document.getElementById('search-loading');
+  const emptyState = document.getElementById('search-empty-state');
+  const resultsList = document.getElementById('results-list');
+
+  loading.style.display = 'block';
+  emptyState.style.display = 'none';
+  resultsList.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/ai/precedent-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query, limit: 6, case_type_filter: caseType })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+
+    if (!data.results || data.results.length === 0) {
+      resultsList.innerHTML = `
+        <div class="card" style="text-align:center; padding:var(--space-6); color:var(--color-text-muted);">
+          <i data-lucide="info" style="width:32px; height:32px; margin:0 auto 8px;"></i>
+          <div>No matching precedents found for "<strong>${escapeHtml(query)}</strong>". Try broader legal concepts.</div>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+
+    data.results.forEach((item, idx) => {
+      const matchPct = Math.round(item.relevance_score * 100);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.padding = 'var(--space-5)';
+
+      const uniqueId = 'prec-' + idx;
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span class="badge ${matchPct >= 70 ? 'badge-success' : 'badge-accent'}" style="font-size:0.75rem; font-weight:700;">
+                ${matchPct}% Semantic Match
+              </span>
+              <span class="badge badge-outline" style="font-size:0.75rem;">${escapeHtml(item.case_type)} &bull; ${item.year}</span>
+              <span style="font-size:0.75rem; color:var(--color-text-muted);">${escapeHtml(item.court_name)}</span>
+            </div>
+            <h3 style="font-size:1.05rem; margin:0 0 2px 0; color:var(--color-text);">${escapeHtml(item.title)}</h3>
+            <div style="font-family:var(--font-mono); font-size:0.8rem; color:var(--color-accent); font-weight:600;">
+              ${escapeHtml(item.citation)}
+            </div>
+          </div>
+
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="copyPrecedentText('${escapeHtml(item.citation)}') title="Copy Citation">
+              <i data-lucide="copy" style="width:14px; height:14px; margin-right:4px;"></i> Copy
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="executePrecedentSearch()" title="Regenerate Ranking">
+              <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="background:var(--color-surface-subtle); border-left:3px solid var(--color-accent); padding:10px 14px; border-radius:0 4px 4px 0; margin-bottom:12px; font-size:0.86rem; line-height:1.5;">
+          <strong>Ratio / Key Passage:</strong><br>
+          ${item.highlighted_passage || escapeHtml(item.key_passages || '')}
+        </div>
+
+        <div style="font-size:0.82rem; color:var(--color-text-muted); line-height:1.4; margin-bottom:10px;">
+          <strong>Headnote:</strong> ${escapeHtml(item.headnote || '')}
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:var(--color-text-muted); border-top:1px solid var(--color-border); padding-top:8px;">
+          <span>Statutory Ref: <code style="font-family:var(--font-mono);">${escapeHtml(item.statutory_sections || 'General Law')}</code></span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge badge-outline" style="font-size:0.65rem;">⚖️ AI-generated, review before use</span>
+            <div style="display:flex; gap:4px; align-items:center;">
+              <button onclick="rateAIFeature('precedent_search', 'helpful', '${uniqueId}')" title="Helpful precedent" style="background:none; border:none; cursor:pointer;">👍</button>
+              <button onclick="rateAIFeature('precedent_search', 'wrong', '${uniqueId}')" title="Irrelevant precedent" style="background:none; border:none; cursor:pointer;">👎</button>
+            </div>
+            <span id="${uniqueId}-status" style="font-size:0.65rem; color:var(--color-success);"></span>
+          </div>
+        </div>
+      `;
+      resultsList.appendChild(card);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  } catch (e) {
+    loading.style.display = 'none';
+    resultsList.innerHTML = `<div class="alert alert-danger">Error retrieving precedents: ${e.message}</div>`;
+  }
+}
+
+function copyPrecedentText(text) {
+  navigator.clipboard.writeText(text);
+  alert('Citation copied to clipboard: ' + text);
+}
+
+async function rateAIFeature(feature, rating, uniqueId) {
+  try {
+    await fetch('/api/ai/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: feature, rating: rating })
+    });
+    const s = document.getElementById(uniqueId + '-status');
+    if (s) s.textContent = 'Feedback saved';
+  } catch(e) {}
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+</script>
+{% endblock %}

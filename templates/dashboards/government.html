@@ -1,0 +1,993 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Government Oversight Command Center - NyayaDesk{% endblock %}
+
+{% block content %}
+<!-- COMMAND CENTER PAGE HEADER -->
+<div class="dashboard-page-header">
+  <div class="dashboard-title-group">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2);">
+      <span class="pulse-dot"></span> Ministry of Law & Justice &bull; Executive Command
+    </div>
+    <h2>National Judicial Governance Portal</h2>
+    <p>Executive oversight of judicial bench appointments, court infrastructure, and national caseload disposal telemetry.</p>
+  </div>
+
+  <div class="dashboard-actions-group">
+    <button class="btn btn-primary btn-sm" onclick="openModal('add-court-modal')">
+      <i data-lucide="plus-circle"></i> Add Court Complex
+    </button>
+    <button class="btn btn-outline btn-sm" onclick="refreshGovData()">
+      <i data-lucide="refresh-cw"></i> Refresh Telemetry
+    </button>
+  </div>
+</div>
+
+<!-- 1. COMPACT KPI ROW WITH DELTAS & SPARKLINES -->
+<div class="grid grid-cols-4" style="margin-bottom: var(--space-6);">
+  
+  <!-- Pending Clearances -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Pending Clearances</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-warning);">
+        <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" id="stat-pending">{{ stats.pending_approvals }}</div>
+      <div class="kpi-delta down-positive">
+        <i data-lucide="arrow-down-right" style="width: 12px; height: 12px;"></i> -2 today
+      </div>
+    </div>
+    <!-- Mini SVG Sparkline -->
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,20 Q20,15 40,18 T70,8 T100,5" fill="none" stroke="var(--color-warning)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <!-- Courts Managed -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Courts Managed</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-accent);">
+        <i data-lucide="landmark" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" id="stat-courts">{{ stats.total_courts }}</div>
+      <div class="kpi-delta up-positive">
+        <i data-lucide="arrow-up-right" style="width: 12px; height: 12px;"></i> +1 complex
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,18 Q30,12 60,14 T100,6" fill="none" stroke="var(--color-accent)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <!-- Verified Judges -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Verified Judges</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-success);">
+        <i data-lucide="award" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" id="stat-judges">{{ stats.total_judges }}</div>
+      <div class="kpi-delta up-positive">
+        <i data-lucide="check" style="width: 12px; height: 12px;"></i> 100% active
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,22 Q25,18 50,12 T80,8 T100,4" fill="none" stroke="var(--color-success)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <!-- Active Caseload -->
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">National Dockets</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-info);">
+        <i data-lucide="files" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" id="stat-cases">{{ stats.total_cases }}</div>
+      <div class="kpi-delta neutral">
+        <i data-lucide="minus" style="width: 12px; height: 12px;"></i> Stable
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,14 Q30,18 60,10 T100,12" fill="none" stroke="var(--color-info)" stroke-width="2" />
+    </svg>
+  </div>
+
+</div>
+
+<!-- 2. PROMINENT APPROVAL REQUESTS CENTER -->
+<section id="approvals-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 2px;">
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+          Judicial Appointment & Clearance Center
+        </h3>
+        <span class="badge badge-warning" style="font-size: 0.68rem;">Statutory Protocol</span>
+      </div>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Executive vetting and credential clearance for High Court & District Court appointment dossiers.
+      </p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: var(--space-3);">
+      <button class="btn btn-success btn-sm" onclick="confirmBulkApprove()">
+        <i data-lucide="check-check"></i> Approve All Pending
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs-nav" style="padding: 0 var(--space-6); background: var(--color-surface-subtle); border-bottom: 1px solid var(--color-border);">
+    <button class="tab-btn active" id="tab-btn-Pending" onclick="loadApprovalsTab('Pending')">
+      <i data-lucide="hourglass" style="width: 14px; height: 14px;"></i> Pending (<span id="count-pending">{{ pending_approvals|length }}</span>)
+    </button>
+    <button class="tab-btn" id="tab-btn-Approved" onclick="loadApprovalsTab('Approved')">
+      <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i> Cleared & Active
+    </button>
+    <button class="tab-btn" id="tab-btn-Rejected" onclick="loadApprovalsTab('Rejected')">
+      <i data-lucide="x-circle" style="width: 14px; height: 14px;"></i> Returned / Declined
+    </button>
+  </div>
+
+  <!-- Approvals Table Container -->
+  <div id="approvals-table-container">
+    <div class="table-responsive">
+      <table class="table table-dense" id="approvals-table">
+        <thead>
+          <tr>
+            <th>Applicant Dossier</th>
+            <th>Requested Bench Role</th>
+            <th>Court Jurisdiction</th>
+            <th>Identification / Service ID</th>
+            <th>Dispatched</th>
+            <th style="text-align: right;">Executive Determination</th>
+          </tr>
+        </thead>
+        <tbody id="approvals-tbody">
+          {% for req in pending_approvals %}
+            <tr id="req-row-{{ req.id }}">
+              <td>
+                <div style="display: flex; align-items: center; gap: var(--space-3);">
+                  <div class="user-avatar" style="width: 34px; height: 34px; font-size: 0.8rem; background: var(--color-primary); color: #FFF; font-weight: 700;">
+                    {{ req.applicant.full_name[:2]|upper }}
+                  </div>
+                  <div>
+                    <strong style="color: var(--color-text);">{{ req.applicant.full_name }}</strong>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: var(--font-mono);">{{ req.applicant.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge {% if req.requested_role == 'judge' %}badge-warning{% else %}badge-info{% endif %}">
+                  {{ req.requested_role|upper }}
+                </span>
+              </td>
+              <td>
+                <strong style="color: var(--color-text);">{{ req.court_name }}</strong>
+                <div style="font-size: 0.72rem; color: var(--color-text-muted);">{{ req.applicant.designation or 'Judicial Officer' }}</div>
+              </td>
+              <td>
+                <code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">{{ req.applicant.id_proof_no or 'ID-SUBMITTED' }}</code>
+              </td>
+              <td style="font-size: 0.78rem; color: var(--color-text-muted);">
+                {{ req.created_at.strftime('%d %b %Y, %H:%M') }}
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 4px;">
+                  <button class="btn btn-outline btn-sm" onclick='viewApplicantDetails({{ req.id }}, {{ req.applicant.full_name|tojson }}, {{ req.requested_role|tojson }}, {{ req.court_name|tojson }}, {{ req.applicant.email|tojson }}, {{ req.applicant.phone|tojson }}, {{ req.applicant.id_proof_no|tojson }}, {{ req.details_json|tojson }})'>
+                    <i data-lucide="eye"></i> Details
+                  </button>
+                  <button class="btn btn-success btn-sm" onclick="handleApprove({{ req.id }})">
+                    <i data-lucide="check"></i> Approve
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="promptReject({{ req.id }}, '{{ req.applicant.full_name }}')">
+                    <i data-lucide="x"></i> Reject
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 2.5 AI NATURAL-LANGUAGE ANALYTICS & BACKLOG INSIGHTS (FEATURES 7 & 8) -->
+<section id="gov-ai-analytics-section" class="card" style="margin-bottom: var(--space-6); border: 1px solid rgba(201,162,75,0.4); padding: var(--space-5);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(201,162,75,0.15); display: flex; align-items: center; justify-content: center; color: var(--color-accent);">
+        <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+      </div>
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text); margin: 0;">
+          National Judicial Analytics Copilot ("Ask Your Data")
+        </h3>
+        <p style="font-size: 0.75rem; color: var(--color-text-muted); margin: 0;">
+          Query nationwide court metrics, pendency trends, and clearance velocity using safe parameterized tools (zero raw SQL).
+        </p>
+      </div>
+    </div>
+    <span class="badge badge-outline" style="font-size: 0.65rem;">⚖️ AI-generated, review before use</span>
+  </div>
+
+  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+    <input type="text" id="gov-nl-query" class="form-control" style="font-size: 0.88rem;" placeholder="Ask executive question e.g. 'How many civil cases were disposed last month?' or 'Group cases by case type'..." onkeydown="if(event.key==='Enter') executeGovNlQuery()">
+    <button class="btn btn-primary" onclick="executeGovNlQuery()" style="display: inline-flex; align-items: center; gap: 6px; padding: 0 16px;">
+      <i data-lucide="search" style="width: 14px; height: 14px;"></i> Query Data
+    </button>
+  </div>
+
+  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; align-items: center;">
+    <span style="font-size: 0.7rem; color: var(--color-text-muted);">Quick Prompts:</span>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setGovNlPrompt('How many civil cases were disposed last month?')">Disposed civil cases last month</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setGovNlPrompt('Group cases by case type')">Breakdown by case category</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setGovNlPrompt('Average disposal time for cases')">Average case disposal velocity</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setGovNlPrompt('Hearings scheduled in next 30 days')">Upcoming 30-day hearing schedule</button>
+  </div>
+
+  <div id="gov-nl-loading" style="display: none; padding: 12px; text-align: center;">
+    <i data-lucide="loader" class="spin" style="width: 18px; height: 18px; color: var(--color-accent); margin-bottom: 4px;"></i>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Computing verified statistics with safe query tool...</div>
+  </div>
+
+  <div id="gov-nl-result" style="display: none; background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <span id="gov-nl-summary" style="font-size: 0.88rem; font-weight: 600; color: var(--color-text);"></span>
+      <span id="gov-nl-tool-badge" class="badge badge-accent" style="font-size: 0.65rem; font-family: var(--font-mono);"></span>
+    </div>
+    <div id="gov-nl-chart-container" style="position: relative; height: 210px; display: none; margin-top: 10px;">
+      <canvas id="govNlChart"></canvas>
+    </div>
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.7rem; color: var(--color-text-muted); border-top: 1px solid var(--color-border); padding-top: 6px;">
+      <span>Rate Result:</span>
+      <button onclick="rateAIFeature('nl_analytics', 'helpful')" style="background:none; border:none; cursor:pointer;">👍</button>
+      <button onclick="rateAIFeature('nl_analytics', 'wrong')" style="background:none; border:none; cursor:pointer;">👎</button>
+    </div>
+  </div>
+</section>
+
+<!-- 3. NATIONAL JUDICIAL ANALYTICS GRID (CHART.JS) -->
+<section id="analytics-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+        National Caseload Telemetry & Disposal Clearance
+      </h3>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Distribution breakdown across court complexes, dispute tiers, and disposal velocity.
+      </p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span class="badge badge-accent" style="font-size: 0.72rem;"><span class="pulse-dot"></span> Live Telemetry</span>
+    </div>
+  </div>
+
+  <div style="padding: var(--space-6);">
+    <div class="grid grid-cols-3" style="gap: var(--space-5);">
+      
+      <!-- Chart 1: Case Type Donut with Center Total -->
+      <div style="background: var(--color-surface-subtle); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--color-border); display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+          <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--color-text);">Dockets by Legal Category</h4>
+          <span style="font-size: 0.7rem; color: var(--color-text-muted);">Donut Distribution</span>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="chart-case-types"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Court Complex Caseload Comparison -->
+      <div style="background: var(--color-surface-subtle); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--color-border); display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+          <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--color-text);">Court Jurisdiction Load</h4>
+          <span style="font-size: 0.7rem; color: var(--color-text-muted);">Active Filings</span>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="chart-court-comparison"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: Pending vs Disposed Clearance Ratio -->
+      <div style="background: var(--color-surface-subtle); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--color-border); display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+          <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--color-text);">Clearance Velocity Ratio</h4>
+          <span style="font-size: 0.7rem; color: var(--color-success); font-weight: 600;">Disposal Health</span>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="chart-disposal-ratio"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 4. MANAGE COURTS & COURTROOMS -->
+<section id="courts-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+        Court Complexes & Judicial Infrastructure
+      </h3>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Active territorial benches, physical courtroom facilities, and assigned registry codes.
+      </p>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('add-court-modal')">
+      <i data-lucide="plus"></i> New Court Complex
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dense" id="courts-table">
+      <thead>
+        <tr>
+          <th>Court Code</th>
+          <th>Complex Name</th>
+          <th>Bench Tier</th>
+          <th>City / State</th>
+          <th>Courtrooms</th>
+          <th>Cases Listed</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="courts-tbody">
+        <!-- Rendered via JS -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 5. MANAGE JUDGES & REGISTRARS (SUSPEND / REACTIVATE) -->
+<section id="users-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+        Judicial Officers Roster & Bench Standing
+      </h3>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Validation of judicial commission, tenure, and administrative suspension/reactivation toggles.
+      </p>
+    </div>
+    <span class="badge badge-info" style="font-size: 0.72rem;">Executive Roster</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dense">
+      <thead>
+        <tr>
+          <th>Officer Particulars</th>
+          <th>Role</th>
+          <th>Affiliated Court</th>
+          <th>Official Designation</th>
+          <th>Appointed Date</th>
+          <th>Status</th>
+          <th style="text-align: right;">Standing Toggle</th>
+        </tr>
+      </thead>
+      <tbody id="judges-tbody">
+        <!-- Loaded via JS -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 6. AUDIT TRAIL VIEWER WITH ACTION FILTERS -->
+<section id="audit-section" class="card" style="border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <!-- Table Toolbar -->
+  <div class="table-toolbar">
+    <div class="table-toolbar-left">
+      <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text); margin: 0;">
+        Cryptographic Judicial Audit Log
+      </h3>
+      <span class="badge badge-outline" style="font-size: 0.68rem; font-family: var(--font-mono);">SHA-256 Tamper-Evident</span>
+    </div>
+
+    <div class="table-toolbar-right">
+      <div class="search-input-wrapper">
+        <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+        <input type="text" id="audit-filter-input" class="form-control" placeholder="Filter action code..." style="padding: 4px 8px 4px 28px; font-size: 0.78rem; width: 220px;" oninput="filterAuditLogs(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dense" style="font-size: 0.8rem;">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Action Code</th>
+          <th>Entity / Target</th>
+          <th>Actor</th>
+          <th>Network IP</th>
+          <th>Audit Particulars</th>
+        </tr>
+      </thead>
+      <tbody id="audit-tbody">
+        {% for log in recent_audits %}
+          <tr>
+            <td style="font-family: var(--font-mono); color: var(--color-text-muted);">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>
+              <span class="badge {% if 'SUCCESS' in log.action or 'APPROVE' in log.action %}badge-success{% elif 'FAIL' in log.action or 'REJECT' in log.action or 'LOCK' in log.action %}badge-danger{% else %}badge-primary{% endif %}" style="font-size: 0.7rem;">
+                {{ log.action }}
+              </span>
+            </td>
+            <td><code style="padding: 1px 5px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">{{ log.entity or 'system' }} #{{ log.entity_id or '-' }}</code></td>
+            <td style="font-weight: 500;">{{ log.user.full_name if log.user else 'System' }}</td>
+            <td style="font-family: var(--font-mono); color: var(--color-text-muted);">{{ log.ip or '127.0.0.1' }}</td>
+            <td style="color: var(--color-text-secondary);">{{ log.details }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =========================================================================
+     GOVERNMENT SPECIFIC MODALS & DRAWERS
+     ========================================================================= -->
+
+<!-- Applicant Details Drawer -->
+<div id="applicant-drawer" class="drawer-overlay">
+  <div class="drawer">
+    <div class="drawer-header">
+      <div>
+        <span id="drawer-app-role" class="badge badge-warning">JUDGE</span>
+        <h3 id="drawer-app-name" class="heading-serif" style="font-size: 1.25rem; margin-top: 0.2rem;">Applicant Details</h3>
+      </div>
+      <button onclick="closeDrawer('applicant-drawer')" style="background: none; border: none; font-size: 1.5rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <div class="drawer-body" id="drawer-app-body">
+      <!-- Injected via JS -->
+    </div>
+
+    <div class="drawer-footer" id="drawer-app-footer">
+      <!-- Actions injected via JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Reject Remarks Modal -->
+<div id="reject-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 480px;">
+    <div class="modal-header">
+      <h3 class="card-title" style="color: var(--color-danger); font-size: 1.15rem;">Decline Judicial Application</h3>
+      <button onclick="closeModal('reject-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <form id="reject-form" onsubmit="submitRejection(event)" class="modal-body" style="padding: var(--space-6);">
+      <input type="hidden" id="reject-req-id">
+      <div style="margin-bottom: var(--space-4); font-size: 0.88rem; color: var(--color-text);">
+        Applicant: <strong id="reject-applicant-name"></strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reject-remarks">Official Rejection Grounds <span style="color: var(--color-danger);">*</span></label>
+        <textarea id="reject-remarks" class="form-control" rows="4" placeholder="Specify why the judicial appointment was returned (e.g. Service record discrepancy, gazette notification missing)..." required></textarea>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('reject-modal')">Cancel</button>
+        <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Court Modal -->
+<div id="add-court-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 520px;">
+    <div class="modal-header">
+      <h3 class="card-title heading-serif" style="font-size: 1.25rem;">Register New Court Complex</h3>
+      <button onclick="closeModal('add-court-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <form id="add-court-form" onsubmit="saveNewCourt(event)" class="modal-body" style="padding: var(--space-6);">
+      <div class="form-group">
+        <label class="form-label" for="court-name">Court Complex Name <span style="color: var(--color-danger);">*</span></label>
+        <input type="text" id="court-name" class="form-control" placeholder="e.g. Rohini District Court Complex" required>
+      </div>
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="court-type">Court Tier / Type</label>
+          <select id="court-type" class="form-control">
+            <option value="District">District Court</option>
+            <option value="High">High Court</option>
+            <option value="Family">Family Court</option>
+            <option value="Commercial">Commercial Division</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="court-city">City <span style="color: var(--color-danger);">*</span></label>
+          <input type="text" id="court-city" class="form-control" placeholder="e.g. New Delhi" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="court-address">Physical Address</label>
+        <input type="text" id="court-address" class="form-control" placeholder="e.g. Outer Ring Road, Sector 14, Rohini">
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('add-court-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Court</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentApprovalsTab = 'Pending';
+let caseTypesChart = null;
+let courtComparisonChart = null;
+let disposalRatioChart = null;
+
+async function loadApprovalsTab(status) {
+  currentApprovalsTab = status;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const targetBtn = document.getElementById(`tab-btn-${status}`);
+  if (targetBtn) targetBtn.classList.add('active');
+
+  const tbody = document.getElementById('approvals-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading clearances...</td></tr>';
+
+  try {
+    const res = await fetch(`/api/gov/approvals?status=${status}`);
+    if (res.ok) {
+      const data = await res.json();
+      const list = data.requests || [];
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">No ${status.toLowerCase()} applications in this queue.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(r => `
+        <tr id="req-row-${r.id}">
+          <td>
+            <div style="display: flex; align-items: center; gap: var(--space-3);">
+              <div class="user-avatar" style="width: 34px; height: 34px; font-size: 0.8rem; background: var(--color-primary); color: #FFF; font-weight: 700;">
+                ${r.applicant_name.substring(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <strong style="color: var(--color-text);">${r.applicant_name}</strong>
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: var(--font-mono);">${r.applicant_email}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge ${r.requested_role === 'judge' ? 'badge-warning' : 'badge-info'}">${r.requested_role.toUpperCase()}</span></td>
+          <td>
+            <strong style="color: var(--color-text);">${r.court_name}</strong>
+            <div style="font-size: 0.72rem; color: var(--color-text-muted);">${r.details.designation || 'Judicial Officer'}</div>
+          </td>
+          <td><code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">${r.details.employee_id || 'Submitted'}</code></td>
+          <td style="font-size: 0.78rem; color: var(--color-text-muted);">${r.created_at}</td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 4px;">
+              <button class="btn btn-outline btn-sm" onclick='viewApplicantDetails(${r.id}, ${JSON.stringify(r.applicant_name)}, ${JSON.stringify(r.requested_role)}, ${JSON.stringify(r.court_name)}, ${JSON.stringify(r.applicant_email)}, ${JSON.stringify(r.applicant_phone)}, ${JSON.stringify(r.details.employee_id || "N/A")}, ${JSON.stringify(JSON.stringify(r.details))})'>
+                <i data-lucide="eye"></i> Details
+              </button>
+              ${status === 'Pending' ? `
+                <button class="btn btn-success btn-sm" onclick="handleApprove(${r.id})">
+                  <i data-lucide="check"></i> Approve
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="promptReject(${r.id}, '${r.applicant_name}')">
+                  <i data-lucide="x"></i> Reject
+                </button>
+              ` : `<span class="badge ${status === 'Approved' ? 'badge-success' : 'badge-danger'}">${status.toUpperCase()}</span>`}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+      if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+    }
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--color-danger); padding: 1.5rem;">Error loading requests.</td></tr>';
+  }
+}
+
+function viewApplicantDetails(reqId, name, role, court, email, phone, idProof, detailsStr) {
+  let details = {};
+  try {
+    details = typeof detailsStr === 'string' ? JSON.parse(detailsStr) : detailsStr;
+  } catch(e) {}
+
+  document.getElementById('drawer-app-name').textContent = name;
+  document.getElementById('drawer-app-role').textContent = role.toUpperCase();
+  
+  const body = document.getElementById('drawer-app-body');
+  body.innerHTML = `
+    <div style="margin-bottom: var(--space-4);">
+      <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--color-text);">Submitted Credentials</h4>
+      <table class="table" style="font-size: 0.85rem;">
+        <tr><th style="width: 40%;">Official Email:</th><td>${email}</td></tr>
+        <tr><th>Telephone:</th><td>${phone || 'N/A'}</td></tr>
+        <tr><th>Assigned Court:</th><td>${court}</td></tr>
+        <tr><th>Identification / ID No:</th><td><code>${idProof || 'N/A'}</code></td></tr>
+        <tr><th>Judicial Designation:</th><td>${details.designation || 'Judicial Officer'}</td></tr>
+        <tr><th>Years of Service:</th><td>${details.years_service ? details.years_service + ' years' : 'N/A'}</td></tr>
+        <tr><th>Status:</th><td><span class="badge badge-warning">Pending Review</span></td></tr>
+      </table>
+    </div>
+    <div style="background: var(--color-surface-subtle); padding: var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--color-border); font-size: 0.82rem; color: var(--color-text-muted);">
+      <strong style="color: var(--color-text);">Executive Protocol Note:</strong> Approving this request issues immediate bench signing rights and dispatches simulated confirmation SMS & email notices.
+    </div>
+  `;
+
+  const footer = document.getElementById('drawer-app-footer');
+  footer.innerHTML = `
+    <div style="display: flex; justify-content: flex-end; gap: var(--space-3); width: 100%;">
+      <button class="btn btn-outline btn-sm" onclick="closeDrawer('applicant-drawer')">Close</button>
+      <button class="btn btn-danger btn-sm" onclick="closeDrawer('applicant-drawer'); promptReject(${reqId}, '${name}')">Reject</button>
+      <button class="btn btn-success btn-sm" onclick="closeDrawer('applicant-drawer'); handleApprove(${reqId})">Approve & Activate</button>
+    </div>
+  `;
+
+  openDrawer('applicant-drawer');
+  if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+}
+
+async function handleApprove(reqId) {
+  try {
+    const res = await fetch(`/api/gov/approvals/${reqId}/approve`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(data.message || 'Applicant approved & activated!', 'success');
+      refreshGovData();
+    } else {
+      showToast(data.error || 'Approval failed', 'danger');
+    }
+  } catch(e) {
+    showToast('Failed to approve request', 'danger');
+  }
+}
+
+function promptReject(reqId, name) {
+  document.getElementById('reject-req-id').value = reqId;
+  document.getElementById('reject-applicant-name').textContent = name;
+  document.getElementById('reject-remarks').value = '';
+  openModal('reject-modal');
+}
+
+async function submitRejection(e) {
+  e.preventDefault();
+  const reqId = document.getElementById('reject-req-id').value;
+  const remarks = document.getElementById('reject-remarks').value.trim();
+
+  try {
+    const res = await fetch(`/api/gov/approvals/${reqId}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ remarks })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(data.message || 'Application rejected.', 'warning');
+      closeModal('reject-modal');
+      refreshGovData();
+    } else {
+      showToast(data.error || 'Failed to reject', 'danger');
+    }
+  } catch(e) {
+    showToast('Error during rejection process', 'danger');
+  }
+}
+
+async function confirmBulkApprove() {
+  if (!confirm('Are you sure you want to approve all pending judicial applications?')) return;
+  try {
+    const res = await fetch('/api/gov/approvals/bulk-approve', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(data.message, 'success');
+      refreshGovData();
+    }
+  } catch(e) {
+    showToast('Bulk approval failed', 'danger');
+  }
+}
+
+async function loadCourts() {
+  try {
+    const res = await fetch('/api/gov/courts');
+    if (res.ok) {
+      const data = await res.json();
+      const tbody = document.getElementById('courts-tbody');
+      tbody.innerHTML = (data.courts || []).map(c => `
+        <tr>
+          <td><code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">${c.code}</code></td>
+          <td><strong>${c.name}</strong></td>
+          <td><span class="badge badge-primary">${c.type}</span></td>
+          <td>${c.city}, ${c.state}</td>
+          <td>${c.courtroom_count} Benches</td>
+          <td><strong>${c.cases_count} Active</strong></td>
+          <td style="text-align: right;">
+            <button class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 2px 8px;" onclick="showToast('Courtroom details for ' + '${c.name}', 'info')">
+              Manage
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch(e) {}
+}
+
+async function loadJudges() {
+  try {
+    const res = await fetch('/api/gov/judges');
+    if (res.ok) {
+      const data = await res.json();
+      const tbody = document.getElementById('judges-tbody');
+      tbody.innerHTML = (data.judges || []).map(j => `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: var(--space-3);">
+              <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                ${j.name.substring(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <strong>${j.name}</strong>
+                <div style="font-size: 0.72rem; color: var(--color-text-muted);">${j.email}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge ${j.role === 'judge' ? 'badge-warning' : 'badge-info'}">${j.role.toUpperCase()}</span></td>
+          <td>${j.court || 'High Court of Delhi'}</td>
+          <td>${j.designation || 'Judicial Officer'}</td>
+          <td style="font-size: 0.78rem; color: var(--color-text-muted);">${j.created_at}</td>
+          <td>
+            <span class="badge ${j.status === 'active' ? 'badge-success' : 'badge-danger'}">
+              ${j.status.toUpperCase()}
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <button class="btn ${j.status === 'active' ? 'btn-danger' : 'btn-success'} btn-sm" style="font-size: 0.72rem; padding: 2px 8px;" onclick="toggleJudgeStatus(${j.id}, '${j.status}')">
+              ${j.status === 'active' ? 'Suspend' : 'Reactivate'}
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch(e) {}
+}
+
+async function toggleJudgeStatus(userId, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+  if (!confirm(`Are you sure you want to set this judicial officer to ${newStatus}?`)) return;
+
+  try {
+    const res = await fetch(`/api/gov/users/${userId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) {
+      showToast(`User status updated to ${newStatus}`, 'success');
+      loadJudges();
+    }
+  } catch(e) {
+    showToast('Failed to update status', 'danger');
+  }
+}
+
+function filterAuditLogs(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#audit-tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+async function saveNewCourt(e) {
+  e.preventDefault();
+  const name = document.getElementById('court-name').value.trim();
+  const type = document.getElementById('court-type').value;
+  const city = document.getElementById('court-city').value.trim();
+  const address = document.getElementById('court-address').value.trim();
+
+  try {
+    const res = await fetch('/api/gov/courts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, type, city, address })
+    });
+    if (res.ok) {
+      showToast('Court complex added successfully!', 'success');
+      closeModal('add-court-modal');
+      loadCourts();
+      refreshGovData();
+    }
+  } catch(e) {
+    showToast('Failed to create court.', 'danger');
+  }
+}
+
+async function initGovCharts() {
+  try {
+    const res = await fetch('/api/gov/analytics');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+    const textColor = isDark ? '#94A3B8' : '#64748B';
+
+    // Chart 1: Case Categories Donut Chart with Center Total
+    const ctx1 = document.getElementById('chart-case-types').getContext('2d');
+    if (caseTypesChart) caseTypesChart.destroy();
+    
+    const palette = ['#2563EB', '#C9A24B', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4', '#64748B'];
+    caseTypesChart = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: data.case_types.labels,
+        datasets: [{
+          data: data.case_types.counts,
+          backgroundColor: palette,
+          borderWidth: 2,
+          borderColor: isDark ? '#111827' : '#FFFFFF'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, color: textColor } },
+          tooltip: {
+            backgroundColor: isDark ? '#1F2937' : '#0B1F3A',
+            titleColor: '#FFFFFF',
+            bodyColor: '#F8FAFC',
+            padding: 10,
+            cornerRadius: 8
+          }
+        },
+        cutout: '68%'
+      }
+    });
+
+    // Chart 2: Court Comparison Rounded Horizontal Bars
+    const ctxCourt = document.getElementById('chart-court-comparison').getContext('2d');
+    if (courtComparisonChart) courtComparisonChart.destroy();
+    courtComparisonChart = new Chart(ctxCourt, {
+      type: 'bar',
+      data: {
+        labels: data.courts.labels.map(l => l.length > 20 ? l.substring(0, 18) + '...' : l),
+        datasets: [{
+          label: 'Total Cases',
+          data: data.courts.counts,
+          backgroundColor: isDark ? '#C9A24B' : '#0B1F3A',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } },
+          y: { grid: { display: false }, ticks: { color: textColor } }
+        }
+      }
+    });
+
+    // Chart 3: Clearance Ratio Donut / Gauge
+    const ctx2 = document.getElementById('chart-disposal-ratio').getContext('2d');
+    if (disposalRatioChart) disposalRatioChart.destroy();
+    disposalRatioChart = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending Dockets', 'Disposed Decrees'],
+        datasets: [{
+          data: [data.status_ratio.pending, data.status_ratio.disposed],
+          backgroundColor: ['#F59E0B', '#10B981'],
+          borderWidth: 2,
+          borderColor: isDark ? '#111827' : '#FFFFFF'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 }, color: textColor } }
+        },
+        cutout: '70%'
+      }
+    });
+  } catch(e) {}
+}
+
+async function refreshGovData() {
+  try {
+    const res = await fetch('/api/gov/stats');
+    if (res.ok) {
+      const stats = await res.json();
+      document.getElementById('stat-pending').textContent = stats.pending_approvals;
+      document.getElementById('stat-courts').textContent = stats.total_courts;
+      document.getElementById('stat-judges').textContent = stats.total_judges;
+      document.getElementById('stat-cases').textContent = stats.active_cases;
+      document.getElementById('count-pending').textContent = stats.pending_approvals;
+    }
+    loadApprovalsTab(currentApprovalsTab);
+    loadCourts();
+    loadJudges();
+    initGovCharts();
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  refreshGovData();
+});
+
+let govNlChartInstance = null;
+
+function setGovNlPrompt(text) {
+  document.getElementById('gov-nl-query').value = text;
+  executeGovNlQuery();
+}
+
+async function executeGovNlQuery() {
+  const q = document.getElementById('gov-nl-query').value.trim();
+  if (!q) return;
+
+  const loading = document.getElementById('gov-nl-loading');
+  const resultBox = document.getElementById('gov-nl-result');
+  const summaryEl = document.getElementById('gov-nl-summary');
+  const toolBadge = document.getElementById('gov-nl-tool-badge');
+  const chartContainer = document.getElementById('gov-nl-chart-container');
+
+  loading.style.display = 'block';
+  resultBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/ai/ask-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    resultBox.style.display = 'block';
+
+    summaryEl.innerHTML = data.summary || 'Query computed successfully.';
+    toolBadge.textContent = 'Tool: ' + (data.tool_used || 'safe_query');
+
+    if (data.chart && data.chart.data) {
+      chartContainer.style.display = 'block';
+      const ctx = document.getElementById('govNlChart').getContext('2d');
+      if (govNlChartInstance) govNlChartInstance.destroy();
+      govNlChartInstance = new Chart(ctx, {
+        type: data.chart.type || 'bar',
+        data: data.chart.data,
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    } else {
+      chartContainer.style.display = 'none';
+    }
+  } catch(e) {
+    loading.style.display = 'none';
+    showToast('Analytics query error: ' + e.message, 'danger');
+  }
+}
+
+async function rateAIFeature(feature, rating) {
+  try {
+    await fetch('/api/ai/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: feature, rating: rating })
+    });
+    showToast('Feedback recorded. Thank you.', 'info');
+  } catch(e) {}
+}
+
+</script>
+{% endblock %}

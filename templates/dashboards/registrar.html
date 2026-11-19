@@ -1,0 +1,877 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Registrar Administration & Case Allocation - NyayaDesk{% endblock %}
+
+{% block content %}
+<!-- REGISTRY PAGE HEADER -->
+<div class="dashboard-page-header">
+  <div class="dashboard-title-group">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(37, 99, 235, 0.1); color: var(--color-info); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2);">
+      <span class="pulse-dot"></span> High Court Registry &bull; Administration Desk
+    </div>
+    <h2>Registry & Case Allocation Command</h2>
+    <p>Presiding Registrar: <strong>{{ user.full_name }}</strong> &bull; Scrutinize electronic filings, allocate disputes to judicial benches, monitor judge workload, and vet clerk credentials.</p>
+  </div>
+
+  <div class="dashboard-actions-group">
+    <div class="segmented-control" style="font-size: 0.78rem;">
+      <button type="button" class="segmented-btn active" id="btn-view-kanban" onclick="switchScrutinyView('kanban')">
+        <i data-lucide="kanban" style="width: 14px; height: 14px;"></i> Kanban Board
+      </button>
+      <button type="button" class="segmented-btn" id="btn-view-table" onclick="switchScrutinyView('table')">
+        <i data-lucide="table" style="width: 14px; height: 14px;"></i> Table View
+      </button>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="loadUnassignedCases()">
+      <i data-lucide="refresh-cw"></i> Refresh Allocation
+    </button>
+  </div>
+</div>
+
+<!-- 1. COMPACT KPI ROW WITH DELTAS & SPARKLINES -->
+<div class="grid grid-cols-4" style="margin-bottom: var(--space-6);">
+  
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Scrutiny Queue</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-warning);">
+        <i data-lucide="file-search" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ cases_scrutiny|length }}</div>
+      <div class="kpi-delta up-negative">
+        <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Defect vetting
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,18 Q30,12 60,16 T100,6" fill="none" stroke="var(--color-warning)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Clerk Approvals</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-accent);">
+        <i data-lucide="user-check" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ clerk_requests|length }}</div>
+      <div class="kpi-delta down-positive">
+        <i data-lucide="clock" style="width: 12px; height: 12px;"></i> In queue
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,20 Q20,10 50,14 T100,4" fill="none" stroke="var(--color-accent)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Active Courtrooms</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-primary);">
+        <i data-lucide="landmark" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ stats.active_courtrooms }}</div>
+      <div class="kpi-delta up-positive">
+        <i data-lucide="check" style="width: 12px; height: 12px;"></i> 100% Online
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,15 Q30,15 60,15 T100,15" fill="none" stroke="var(--color-primary)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Total Registry Cases</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-success);">
+        <i data-lucide="briefcase" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ stats.total_cases }}</div>
+      <div class="kpi-delta up-positive">
+        <i data-lucide="trending-up" style="width: 12px; height: 12px;"></i> Roster active
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,22 Q30,16 60,8 T100,4" fill="none" stroke="var(--color-success)" stroke-width="2" />
+    </svg>
+  </div>
+
+</div>
+
+<!-- 1.5 AI CASE-RISK & BACKLOG INSIGHTS (FEATURE 8) -->
+<section id="ai-backlog-section" class="card" style="margin-bottom: var(--space-6); border: 1px solid rgba(201,162,75,0.4); background: linear-gradient(180deg, var(--color-surface) 0%, rgba(201,162,75,0.03) 100%);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-6); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(201,162,75,0.15); display: flex; align-items: center; justify-content: center; color: var(--color-accent);">
+        <i data-lucide="sparkles" style="width: 18px; height: 18px;"></i>
+      </div>
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.1rem; color: var(--color-text); margin: 0;">
+          AI Case-Risk & Judicial Backlog Insights
+        </h3>
+        <p style="font-size: 0.75rem; color: var(--color-text-muted); margin: 0;">
+          Pre-computed SQL metrics on 2-year pendency thresholds, adjournment patterns, and bench balance.
+        </p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <span class="badge badge-outline" style="font-size: 0.65rem;">⚖️ AI-generated, review before use</span>
+      <button class="btn btn-outline btn-sm" onclick="fetchBacklogInsights()" title="Refresh Insights">
+        <i data-lucide="refresh-cw" style="width: 13px; height: 13px; margin-right: 4px;"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div style="padding: var(--space-5);">
+    <div id="backlog-loading" style="display: none; padding: 16px; text-align: center;">
+      <i data-lucide="loader" class="spin" style="width: 20px; height: 20px; color: var(--color-accent); margin-bottom: 6px;"></i>
+      <div style="font-size: 0.8rem; color: var(--color-text-muted);">Aggregating docket statistics and synthesizing briefing...</div>
+    </div>
+
+    <div id="backlog-content-area">
+      <!-- KPI Mini Row -->
+      <div class="grid grid-cols-4" style="gap: var(--space-3); margin-bottom: var(--space-4);">
+        <div style="background: var(--color-surface-subtle); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">At-Risk Matters (>18 mo)</div>
+          <div id="metric-at-risk" style="font-size: 1.3rem; font-weight: 700; color: var(--color-warning);">--</div>
+        </div>
+        <div style="background: var(--color-surface-subtle); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">Exceeding 2-Yr Threshold</div>
+          <div id="metric-over-2yr" style="font-size: 1.3rem; font-weight: 700; color: var(--color-danger);">--</div>
+        </div>
+        <div style="background: var(--color-surface-subtle); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">Bench Docket Imbalance</div>
+          <div id="metric-bench-ratio" style="font-size: 1.3rem; font-weight: 700; color: var(--color-accent);">--</div>
+        </div>
+        <div style="background: var(--color-surface-subtle); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">Top Adjournment Driver</div>
+          <div id="metric-top-cause" style="font-size: 0.78rem; font-weight: 600; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">--</div>
+        </div>
+      </div>
+
+      <!-- Executive Narrative -->
+      <div style="background: var(--color-surface-subtle); border-left: 3px solid var(--color-accent); padding: 12px 16px; border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: 0.88rem; line-height: 1.5; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong style="color: var(--color-primary); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em;">Executive Briefing Note</strong>
+          <button onclick="copyBacklogNarrative()" class="btn btn-outline btn-sm" style="padding: 1px 6px; font-size: 0.68rem;">Copy</button>
+        </div>
+        <div id="backlog-narrative-text">Click 'Refresh' to compute court backlog intelligence.</div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--color-text-muted);">
+        <span>Rate Briefing:</span>
+        <button onclick="rateAIFeature('backlog_insights', 'helpful')" style="background:none; border:none; cursor:pointer;">👍</button>
+        <button onclick="rateAIFeature('backlog_insights', 'wrong')" style="background:none; border:none; cursor:pointer;">👎</button>
+        <span id="backlog-rate-status" style="color: var(--color-success);"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. E-FILING SCRUTINY QUEUE (KANBAN BOARD & TABLE VIEW) -->
+<section id="scrutiny-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 2px;">
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+          E-Filing Scrutiny & Defect Management Board
+        </h3>
+        <span class="badge badge-warning" style="font-size: 0.7rem;">Registry Stage</span>
+      </div>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Examine incoming advocate petitions, verify court fee stamps, check annexures, and clear for CNR registration.
+      </p>
+    </div>
+    <span class="badge badge-warning" id="scrutiny-count-badge">{{ cases_scrutiny|length }} Matters in Queue</span>
+  </div>
+
+  <!-- KANBAN BOARD VIEW (Default) -->
+  <div id="scrutiny-kanban-view" style="padding: var(--space-6);">
+    <div class="kanban-board">
+      
+      <!-- Column 1: Pending Scrutiny -->
+      <div class="kanban-column" style="border-top: 3px solid var(--color-warning);">
+        <div class="kanban-col-header">
+          <div class="kanban-col-title" style="color: var(--color-warning);">
+            <i data-lucide="clock" style="width: 14px; height: 14px;"></i> Pending Review
+          </div>
+          <span class="badge badge-warning" style="font-size: 0.65rem;">{{ cases_scrutiny|length }}</span>
+        </div>
+        <div class="kanban-cards-list" id="kanban-pending-col">
+          {% if cases_scrutiny %}
+            {% for cs in cases_scrutiny %}
+              <div class="kanban-card" id="kanban-card-{{ cs.id }}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-2);">
+                  <code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border); font-size: 0.75rem;">{{ cs.case_number }}</code>
+                  <span class="badge {% if cs.priority == 'Urgent' %}badge-danger{% elif cs.priority == 'High' %}badge-warning{% else %}badge-primary{% endif %}" style="font-size: 0.65rem;">
+                    {{ cs.priority }}
+                  </span>
+                </div>
+                <h5 style="font-size: 0.88rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--space-1); line-height: 1.35;">
+                  {{ cs.title }}
+                </h5>
+                <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">
+                  Filer: <strong>{{ cs.filer.full_name if cs.filer else 'Advocate on Record' }}</strong> &bull; {{ cs.filed_on.strftime('%d %b %Y') }}
+                </div>
+                <div style="display: flex; gap: var(--space-2); margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--color-border);">
+                  <button type="button" class="btn btn-success btn-sm" style="flex: 1; font-size: 0.72rem; padding: 4px;" onclick="handleScrutinyDecision({{ cs.id }}, 'accept')">
+                    <i data-lucide="check"></i> Accept
+                  </button>
+                  <button type="button" class="btn btn-danger btn-sm" style="flex: 1; font-size: 0.72rem; padding: 4px;" onclick="promptDefect({{ cs.id }}, '{{ cs.case_number }}')">
+                    <i data-lucide="x"></i> Return
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div style="text-align: center; padding: 2rem; color: var(--color-text-muted); font-size: 0.82rem;">
+              <i data-lucide="check-circle" style="width: 32px; height: 32px; color: var(--color-success); margin-bottom: var(--space-2);"></i>
+              <div>No petitions pending scrutiny!</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Column 2: Returned with Defects -->
+      <div class="kanban-column" style="border-top: 3px solid var(--color-danger);">
+        <div class="kanban-col-header">
+          <div class="kanban-col-title" style="color: var(--color-danger);">
+            <i data-lucide="alert-octagon" style="width: 14px; height: 14px;"></i> Returned with Defects
+          </div>
+          <span class="badge badge-danger" style="font-size: 0.65rem;">Defect Requisitions</span>
+        </div>
+        <div class="kanban-cards-list">
+          <div class="kanban-card" style="border-left: 3px solid var(--color-danger); background: var(--color-surface-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <code style="font-size: 0.72rem;">WP(C)/2026/00091</code>
+              <span class="badge badge-danger" style="font-size: 0.6rem;">Curing Defect</span>
+            </div>
+            <div style="font-size: 0.82rem; font-weight: 600; color: var(--color-text);">Metro Builders vs DDA</div>
+            <div style="font-size: 0.72rem; color: #DC2626; margin-top: 4px; line-height: 1.3;">
+              &bull; Defect: Vakalatnama lacks counsel Bar Council verification stamp.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 3: Cleared & Registered -->
+      <div class="kanban-column" style="border-top: 3px solid var(--color-success);">
+        <div class="kanban-col-header">
+          <div class="kanban-col-title" style="color: var(--color-success);">
+            <i data-lucide="check-circle-2" style="width: 14px; height: 14px;"></i> Cleared & Registered
+          </div>
+          <span class="badge badge-success" style="font-size: 0.65rem;">CNR Assigned</span>
+        </div>
+        <div class="kanban-cards-list">
+          <div class="kanban-card" style="border-left: 3px solid var(--color-success); background: var(--color-surface-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <code style="font-size: 0.72rem;">CIV/2026/00010</code>
+              <span class="badge badge-success" style="font-size: 0.6rem;">Ready for Bench</span>
+            </div>
+            <div style="font-size: 0.82rem; font-weight: 600; color: var(--color-text);">Surya Enterprises vs. Global Tech</div>
+            <div style="font-size: 0.72rem; color: var(--color-text-muted); margin-top: 4px;">
+              Court fees confirmed &bull; High Court Commercial Division
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TABLE VIEW (Toggleable) -->
+  <div id="scrutiny-table-view" style="display: none;">
+    <div class="table-responsive">
+      <table class="table table-dense">
+        <thead>
+          <tr>
+            <th>Case Number</th>
+            <th>Petition Title</th>
+            <th>Category / Priority</th>
+            <th>Filing Date</th>
+            <th>Advocate / Filer</th>
+            <th style="text-align: right;">Registry Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if cases_scrutiny %}
+            {% for cs in cases_scrutiny %}
+              <tr id="scrutiny-row-{{ cs.id }}">
+                <td><code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">{{ cs.case_number }}</code></td>
+                <td>
+                  <strong style="color: var(--color-text);">{{ cs.title }}</strong>
+                  <div style="font-size: 0.72rem; color: var(--color-text-muted);">{{ cs.description or 'Initial petition affidavit' }}</div>
+                </td>
+                <td>
+                  <span class="badge badge-primary">{{ cs.case_type }}</span>
+                  <span class="badge {% if cs.priority == 'Urgent' %}badge-danger{% elif cs.priority == 'High' %}badge-warning{% else %}badge-neutral{% endif %}">{{ cs.priority }}</span>
+                </td>
+                <td style="font-size: 0.8rem; color: var(--color-text-muted);">{{ cs.filed_on.strftime('%d-%m-%Y') }}</td>
+                <td style="font-weight: 500;">{{ cs.filer.full_name if cs.filer else 'Advocate on Record' }}</td>
+                <td style="text-align: right;">
+                  <div style="display: inline-flex; gap: 4px;">
+                    <button class="btn btn-success btn-sm" onclick="handleScrutinyDecision({{ cs.id }}, 'accept')">
+                      <i data-lucide="check"></i> Accept & Register
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="promptDefect({{ cs.id }}, '{{ cs.case_number }}')">
+                      <i data-lucide="x"></i> Return Defect
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">
+                <i data-lucide="check-circle-2" style="width: 40px; height: 40px; color: var(--color-success); margin-bottom: 0.5rem;"></i>
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-text);">Registry Scrutiny Queue Cleared</div>
+                <p style="font-size: 0.82rem; margin-top: 0.25rem;">No defective or pending e-filings require vetting at this time.</p>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 3. BENCH ALLOCATION & WORKLOAD BARS -->
+<section id="allocation-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+        Bench Allocation & Judge Workload Balancer
+      </h3>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Allocate registered disputes to judicial chambers while balancing bench docket capacity.
+      </p>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="loadUnassignedCases()">
+      <i data-lucide="refresh-cw"></i> Refresh Unassigned
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dense">
+      <thead>
+        <tr>
+          <th>CNR / Case No.</th>
+          <th>Dispute Title</th>
+          <th>Category</th>
+          <th>Priority</th>
+          <th>Filing Date</th>
+          <th style="min-width: 280px;">Assign Presiding Bench</th>
+        </tr>
+      </thead>
+      <tbody id="allocation-tbody">
+        <!-- Loaded via JS -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 4. REGISTRY ANALYTICS & HOLIDAY CALENDAR -->
+<section class="grid grid-cols-2" style="margin-bottom: var(--space-8); gap: var(--space-6);">
+  
+  <!-- Chart 1: Case Pipeline Funnel / Donut -->
+  <div class="card" style="border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5);">
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text);">Registry Procedural Pipeline</h3>
+        <p class="card-subtitle" style="font-size: 0.78rem; color: var(--color-text-muted);">Distribution across lifecycle stages.</p>
+      </div>
+      <span class="badge badge-accent" style="font-size: 0.68rem;">Live Pipeline</span>
+    </div>
+    <div style="padding: var(--space-5); height: 260px; position: relative;">
+      <canvas id="chart-case-stages"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: Judge Workload Horizontal Bars -->
+  <div class="card" style="border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5);">
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text);">Active Caseload Per Judicial Bench</h3>
+        <p class="card-subtitle" style="font-size: 0.78rem; color: var(--color-text-muted);">Workload distribution across chambers.</p>
+      </div>
+      <span class="badge badge-primary" style="font-size: 0.68rem;">Workload Bars</span>
+    </div>
+    <div style="padding: var(--space-5); height: 260px; position: relative;">
+      <canvas id="chart-bench-caseload"></canvas>
+    </div>
+  </div>
+
+</section>
+
+<!-- 5. OFFICIAL JUDICIAL HOLIDAY & RECESS CALENDAR -->
+<section class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5);">
+    <div style="display: flex; align-items: center; gap: var(--space-2);">
+      <div style="width: 28px; height: 28px; border-radius: var(--radius-md); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); display: flex; align-items: center; justify-content: center;">
+        <i data-lucide="calendar" style="width: 15px; height: 15px;"></i>
+      </div>
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text);">High Court Gazetted Calendar & Judicial Recess</h3>
+        <p class="card-subtitle" style="font-size: 0.78rem; color: var(--color-text-muted);">Non-sitting days, vacation benches, and official gazetted holidays.</p>
+      </div>
+    </div>
+    <span class="badge badge-outline" style="font-size: 0.7rem;">Judicial Year 2026</span>
+  </div>
+
+  <div style="padding: var(--space-5);">
+    <div class="grid grid-cols-4" style="gap: var(--space-4);">
+      <div style="padding: var(--space-4); background: var(--color-surface-subtle); border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+        <div style="font-size: 0.7rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">Gazetted Holiday</div>
+        <div style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin: 2px 0;">Republic Day</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted);">26 Jan 2026 &bull; Monday</div>
+        <span class="badge badge-neutral" style="font-size: 0.65rem; margin-top: 6px;">Registry Closed</span>
+      </div>
+
+      <div style="padding: var(--space-4); background: var(--color-surface-subtle); border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+        <div style="font-size: 0.7rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">Festival Non-Sitting</div>
+        <div style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin: 2px 0;">Holi Celebrations</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted);">17-18 Mar 2026 &bull; 2 Days</div>
+        <span class="badge badge-neutral" style="font-size: 0.65rem; margin-top: 6px;">Bench Recess</span>
+      </div>
+
+      <div style="padding: var(--space-4); background: var(--color-surface-subtle); border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+        <div style="font-size: 0.7rem; font-weight: 700; color: var(--color-warning); text-transform: uppercase;">Vacation Benches</div>
+        <div style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin: 2px 0;">Summer Vacation</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted);">01 Jun - 30 Jun 2026</div>
+        <span class="badge badge-warning" style="font-size: 0.65rem; margin-top: 6px;">Urgent Matters Only</span>
+      </div>
+
+      <div style="padding: var(--space-4); background: var(--color-surface-subtle); border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+        <div style="font-size: 0.7rem; font-weight: 700; color: var(--color-accent); text-transform: uppercase;">Festival Non-Sitting</div>
+        <div style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin: 2px 0;">Diwali Recess</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted);">08 Nov - 12 Nov 2026</div>
+        <span class="badge badge-neutral" style="font-size: 0.65rem; margin-top: 6px;">Registry Closed</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. CLERK CREDENTIAL CLEARANCES -->
+<section id="clerk-approvals" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5);">
+    <div>
+      <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text);">Court Clerk & Bench Staff Approvals</h3>
+      <p class="card-subtitle" style="font-size: 0.78rem; color: var(--color-text-muted);">Validate Employee ID records for Court Masters and Reader appointments.</p>
+    </div>
+    <span class="badge badge-accent">{{ clerk_requests|length }} Pending</span>
+  </div>
+
+  {% if clerk_requests %}
+    <div class="table-responsive">
+      <table class="table table-dense">
+        <thead>
+          <tr>
+            <th>Ref</th>
+            <th>Staff Particulars</th>
+            <th>Employee ID</th>
+            <th>Target Court Complex</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in clerk_requests %}
+            <tr id="clerk-req-{{ req.id }}">
+              <td><code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">#{{ req.id }}</code></td>
+              <td>
+                <strong style="color: var(--color-text);">{{ req.applicant.full_name }}</strong>
+                <div style="font-size: 0.72rem; color: var(--color-text-muted);">{{ req.applicant.email }}</div>
+              </td>
+              <td><code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">{{ req.applicant.id_proof_no or 'CLK-EMP-8831' }}</code></td>
+              <td>{{ req.court_name }}</td>
+              <td style="text-align: right;">
+                <form method="POST" action="{{ url_for('dashboards.registrar_review_approval', req_id=req.id, action='approve') }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-success btn-sm"><i data-lucide="check"></i> Approve</button>
+                </form>
+                <form method="POST" action="{{ url_for('dashboards.registrar_review_approval', req_id=req.id, action='reject') }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-danger btn-sm"><i data-lucide="x"></i> Reject</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="padding: var(--space-8); text-align: center; color: var(--color-text-muted); font-size: 0.85rem;">
+      <i data-lucide="check-circle" style="width: 32px; height: 32px; color: var(--color-success); margin-bottom: var(--space-2);"></i>
+      <div>All court clerk appointment requests are cleared.</div>
+    </div>
+  {% endif %}
+</section>
+
+<!-- Defect Requisition Modal -->
+<div id="defect-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(239, 68, 68, 0.1); color: var(--color-danger); font-size: 0.72rem; font-weight: 700;">
+          <i data-lucide="alert-triangle" style="width: 12px; height: 12px;"></i> Defect Notice
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.2rem; color: var(--color-text); margin-top: 2px;">Issue Registry Defect Notice</h3>
+      </div>
+      <button onclick="closeModal('defect-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="defect-form" onsubmit="submitDefect(event)" class="modal-body" style="padding: var(--space-6);">
+      <input type="hidden" id="defect-case-id">
+      <div style="margin-bottom: var(--space-4); font-size: 0.88rem; color: var(--color-text); background: var(--color-surface-subtle); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+        Target Matter: <strong id="defect-case-number" style="font-family: var(--font-mono); color: var(--color-primary-light);"></strong>
+      </div>
+
+      <!-- FEATURE 4: AI PRE-SCRUTINY DEFECT CHECKER -->
+      <div style="margin-bottom: var(--space-4); background: var(--color-surface-subtle); border: 1px dashed var(--color-accent); border-radius: var(--radius-md); padding: var(--space-3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong style="font-size: 0.82rem; color: var(--color-accent); display: flex; align-items: center; gap: 4px;">
+            <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> AI Pre-Scrutiny Defect Scan
+          </strong>
+          <button type="button" class="btn btn-outline btn-sm" onclick="runAiScrutinyCheck()" style="font-size: 0.72rem; padding: 2px 8px;">
+            <i data-lucide="scan" style="width: 12px; height: 12px; margin-right: 2px;"></i> Scan Defects
+          </button>
+        </div>
+        <div id="ai-defect-scan-status" style="font-size: 0.78rem; line-height: 1.4; color: var(--color-text-secondary);">
+          Run automated pre-scrutiny to check court fee proof, Vakalatnama, annexure count, and relief clarity with confidence scoring.
+        </div>
+        <div id="ai-defect-findings-area" style="display: none; margin-top: 6px;">
+          <div id="ai-defect-items-list" style="font-size: 0.76rem; margin-bottom: 6px;"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="applyAiDefectRemarks()" style="font-size: 0.72rem; padding: 2px 8px; width: 100%;">
+            <i data-lucide="copy" style="width: 12px; height: 12px; margin-right: 4px;"></i> Apply AI Remarks to Requisition Field
+          </button>
+        </div>
+        <div style="margin-top: 6px; font-size: 0.65rem; color: var(--color-text-muted); display: flex; justify-content: space-between; align-items: center;">
+          <span class="badge badge-outline" style="font-size: 0.62rem;">⚖️ AI-generated, review before use</span>
+          <div style="display: flex; gap: 4px;">
+            <button type="button" onclick="rateAIFeature('defect_checker', 'helpful')" style="background:none; border:none; cursor:pointer;">👍</button>
+            <button type="button" onclick="rateAIFeature('defect_checker', 'wrong')" style="background:none; border:none; cursor:pointer;">👎</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="defect-remarks">Specific Defect Requisitions <span style="color: var(--color-danger);">*</span></label>
+        <textarea id="defect-remarks" class="form-control" rows="4" placeholder="Specify statutory defects to be cured (e.g. Inadequate court fee stamp, Vakalatnama missing counsel registration seal, exhibit numbering error)..." required></textarea>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('defect-modal')">Cancel</button>
+        <button type="submit" class="btn btn-danger">
+          <i data-lucide="send"></i> Return with Defects
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let availableJudges = [];
+let caseStagesChart = null;
+let benchCaseloadChart = null;
+
+function switchScrutinyView(view) {
+  const kanban = document.getElementById('scrutiny-kanban-view');
+  const table = document.getElementById('scrutiny-table-view');
+  const btnKanban = document.getElementById('btn-view-kanban');
+  const btnTable = document.getElementById('btn-view-table');
+
+  if (view === 'kanban') {
+    kanban.style.display = 'block';
+    table.style.display = 'none';
+    btnKanban.classList.add('active');
+    btnTable.classList.remove('active');
+  } else {
+    kanban.style.display = 'none';
+    table.style.display = 'block';
+    btnKanban.classList.remove('active');
+    btnTable.classList.add('active');
+  }
+}
+
+async function handleScrutinyDecision(caseId, decision) {
+  try {
+    const res = await fetch('/api/registrar/scrutiny/decision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, decision })
+    });
+    if (res.ok) {
+      showToast(decision === 'accept' ? 'Petition cleared and REGISTERED!' : 'Defects recorded.', 'success');
+      
+      const row = document.getElementById(`scrutiny-row-${caseId}`);
+      if (row) row.remove();
+      const card = document.getElementById(`kanban-card-${caseId}`);
+      if (card) card.remove();
+
+      loadUnassignedCases();
+    }
+  } catch(e) {
+    showToast('Failed to process scrutiny decision.', 'danger');
+  }
+}
+
+function promptDefect(caseId, caseNumber) {
+  document.getElementById('defect-case-id').value = caseId;
+  document.getElementById('defect-case-number').textContent = caseNumber;
+  document.getElementById('defect-remarks').value = '';
+  openModal('defect-modal');
+}
+
+async function submitDefect(e) {
+  e.preventDefault();
+  const caseId = document.getElementById('defect-case-id').value;
+  const remarks = document.getElementById('defect-remarks').value;
+
+  try {
+    const res = await fetch('/api/registrar/scrutiny/decision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, decision: 'defect', remarks })
+    });
+    if (res.ok) {
+      showToast('Defect notice dispatched to filing advocate.', 'warning');
+      closeModal('defect-modal');
+      
+      const row = document.getElementById(`scrutiny-row-${caseId}`);
+      if (row) row.remove();
+      const card = document.getElementById(`kanban-card-${caseId}`);
+      if (card) card.remove();
+    }
+  } catch(e) {
+    showToast('Failed to return petition.', 'danger');
+  }
+}
+
+async function loadUnassignedCases() {
+  const tbody = document.getElementById('allocation-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading unallocated cases...</td></tr>';
+
+  try {
+    const res = await fetch('/api/registrar/cases/unassigned');
+    if (res.ok) {
+      const data = await res.json();
+      const cases = data.cases || [];
+      availableJudges = data.judges || [];
+
+      if (cases.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">All registered cases are currently allocated to benches.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = cases.map(c => `
+        <tr id="alloc-row-${c.id}">
+          <td><code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">${c.case_number}</code></td>
+          <td><strong style="color: var(--color-text);">${c.title}</strong></td>
+          <td><span class="badge badge-primary">${c.case_type}</span></td>
+          <td><span class="badge badge-neutral">${c.priority}</span></td>
+          <td style="font-size: 0.8rem; color: var(--color-text-muted);">${c.filed_on}</td>
+          <td>
+            <div style="display: flex; gap: var(--space-2); align-items: center;">
+              <select id="judge-select-${c.id}" class="form-control" style="font-size: 0.78rem; padding: 4px 8px; flex: 1;">
+                ${availableJudges.map(j => `<option value="${j.id}">${j.name} (${j.designation || 'Judge'})</option>`).join('')}
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="allocateCaseToJudge(${c.id})">
+                <i data-lucide="git-pull-request" style="width: 12px; height: 12px;"></i> Assign
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+      if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+    }
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--color-danger);">Failed to load cases.</td></tr>';
+  }
+}
+
+async function allocateCaseToJudge(caseId) {
+  const select = document.getElementById(`judge-select-${caseId}`);
+  const judgeId = select.value;
+
+  try {
+    const res = await fetch('/api/registrar/cases/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, judge_id: judgeId })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(data.message, 'success');
+      const row = document.getElementById(`alloc-row-${caseId}`);
+      if (row) row.remove();
+      initRegistrarCharts();
+    }
+  } catch(e) {
+    showToast('Failed to allocate case.', 'danger');
+  }
+}
+
+async function initRegistrarCharts() {
+  try {
+    const res = await fetch('/api/registrar/analytics');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+    const textColor = isDark ? '#94A3B8' : '#64748B';
+
+    // Chart 1: Case Pipeline
+    const ctx1 = document.getElementById('chart-case-stages');
+    if (ctx1) {
+      if (caseStagesChart) caseStagesChart.destroy();
+      caseStagesChart = new Chart(ctx1.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: data.case_stages.labels,
+          datasets: [{
+            data: data.case_stages.counts,
+            backgroundColor: ['#F59E0B', '#3B82F6', '#8B5CF6', '#10B981', '#64748B', '#06B6D4'],
+            borderWidth: 2,
+            borderColor: isDark ? '#111827' : '#FFFFFF'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, color: textColor } }
+          },
+          cutout: '68%'
+        }
+      });
+    }
+
+    // Chart 2: Judge Workload Horizontal Bar Chart
+    const ctx2 = document.getElementById('chart-bench-caseload');
+    if (ctx2) {
+      if (benchCaseloadChart) benchCaseloadChart.destroy();
+      benchCaseloadChart = new Chart(ctx2.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.bench_caseload.labels.map(l => l.length > 20 ? l.substring(0, 18) + '...' : l),
+          datasets: [{
+            label: 'Assigned Matters',
+            data: data.bench_caseload.counts,
+            backgroundColor: isDark ? '#C9A24B' : '#0B1F3A',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, precision: 0 } },
+            y: { grid: { display: false }, ticks: { color: textColor } }
+          }
+        }
+      });
+    }
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadUnassignedCases();
+  initRegistrarCharts();
+  fetchBacklogInsights();
+});
+
+let lastSuggestedRemarks = '';
+
+async function fetchBacklogInsights() {
+  const loading = document.getElementById('backlog-loading');
+  const area = document.getElementById('backlog-content-area');
+  if (loading) loading.style.display = 'block';
+
+  try {
+    const res = await fetch('/api/ai/backlog-insights');
+    if (res.ok) {
+      const data = await res.json();
+      if (loading) loading.style.display = 'none';
+
+      document.getElementById('metric-at-risk').textContent = data.metrics.at_risk_count;
+      document.getElementById('metric-over-2yr').textContent = data.metrics.over_2yr_count;
+      document.getElementById('metric-bench-ratio').textContent = data.metrics.imbalance_ratio + 'x';
+      document.getElementById('metric-top-cause').textContent = (data.metrics.top_adjournment_causes[0]?.reason || 'Advocate absent');
+      document.getElementById('backlog-narrative-text').innerHTML = data.executive_narrative.replace(/\n/g, '<br>');
+    }
+  } catch(e) {
+    if (loading) loading.style.display = 'none';
+  }
+}
+
+function copyBacklogNarrative() {
+  const t = document.getElementById('backlog-narrative-text').innerText;
+  navigator.clipboard.writeText(t);
+  showToast('Briefing copied to clipboard.', 'success');
+}
+
+async function runAiScrutinyCheck() {
+  const caseId = document.getElementById('defect-case-id').value;
+  if (!caseId) return;
+
+  const statusEl = document.getElementById('ai-defect-scan-status');
+  const findingsArea = document.getElementById('ai-defect-findings-area');
+  const itemsList = document.getElementById('ai-defect-items-list');
+
+  statusEl.innerHTML = '<span style="color:var(--color-accent);"><i data-lucide="loader" class="spin" style="width:12px; height:12px;"></i> Inspecting petition filings, fees, and signatures...</span>';
+  if (window.lucide) window.lucide.createIcons();
+
+  try {
+    const res = await fetch(`/api/ai/cases/${caseId}/scrutiny-defects`);
+    const data = await res.json();
+
+    if (data.defects && data.defects.length > 0) {
+      statusEl.innerHTML = `<strong>Identified ${data.defect_count} potential defect(s)</strong> (${data.overall_risk} Risk Profile):`;
+      itemsList.innerHTML = data.defects.map(d => `
+        <div style="margin-bottom: 4px; padding: 4px 6px; background: rgba(239,68,68,0.06); border-left: 2px solid var(--color-danger); border-radius: 2px;">
+          <strong>${d.rule}:</strong> ${d.description}
+          <span style="font-size:0.68rem; color:var(--color-text-muted);">(${Math.round(d.confidence * 100)}% conf)</span>
+        </div>
+      `).join('');
+      findingsArea.style.display = 'block';
+      lastSuggestedRemarks = data.draft_requisition_remarks || '';
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--color-success);">✓ No statutory defects detected in petition documentation. Ready for acceptance.</span>';
+      findingsArea.style.display = 'none';
+    }
+    if (window.lucide) window.lucide.createIcons();
+  } catch(e) {
+    statusEl.textContent = 'Error scanning defects: ' + e.message;
+  }
+}
+
+function applyAiDefectRemarks() {
+  if (lastSuggestedRemarks) {
+    document.getElementById('defect-remarks').value = lastSuggestedRemarks;
+    showToast('Applied AI drafted defect remarks.', 'success');
+  }
+}
+
+async function rateAIFeature(feature, rating) {
+  try {
+    await fetch('/api/ai/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: feature, rating: rating })
+    });
+    const s = document.getElementById('backlog-rate-status');
+    if (s) s.textContent = 'Feedback saved!';
+  } catch(e) {}
+}
+
+</script>
+{% endblock %}

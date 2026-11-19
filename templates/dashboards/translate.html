@@ -1,0 +1,242 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Multilingual Judicial Translation Engine - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="dashboard-page-header">
+  <div class="dashboard-title-group">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2);">
+      <span class="pulse-dot"></span> Bhasha Setu &bull; Vernacular Access to Justice
+    </div>
+    <h2>Multilingual Judicial Translation Engine</h2>
+    <p>Translates court notices, orders, and summons between English, Telugu, and Hindi with specialized legal lexicon preservation.</p>
+  </div>
+
+  <div class="dashboard-actions-group">
+    <span class="badge badge-accent" style="font-size: 0.75rem; padding: 6px 12px;">
+      <i data-lucide="languages" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+      English &bull; తెలుగు &bull; हिन्दी
+    </span>
+  </div>
+</div>
+
+<!-- Article 348 Constitutional Authority Disclaimer -->
+<div class="alert alert-warning" style="margin-bottom: var(--space-5); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+  <div style="display: flex; gap: 10px; align-items: flex-start;">
+    <i data-lucide="scale" style="width: 22px; height: 22px; flex-shrink: 0; color: #b45309;"></i>
+    <div style="font-size: 0.82rem; line-height: 1.45;">
+      <strong>Constitutional Authority Notice (Article 348):</strong> Pursuant to Article 348 of the Constitution of India, the English language text remains the authoritative, official version for all judicial proceedings, orders, and decrees. The vernacular translations generated herein serve as machine-generated administrative aids for litigant accessibility and do not supersede the original English record.
+    </div>
+  </div>
+  <span class="badge badge-outline" style="font-size: 0.68rem; flex-shrink: 0;">⚖️ AI-generated, review before use</span>
+</div>
+
+<!-- Controls Bar -->
+<div class="card" style="margin-bottom: var(--space-5); padding: var(--space-4);">
+  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; justify-content: space-between;">
+    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+      <div>
+        <label style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-bottom: 2px;">Document Type</label>
+        <select id="trans-doc-type" class="form-control" style="font-size: 0.85rem; height: 38px;">
+          <option value="Court Notice">Court Notice / Summons</option>
+          <option value="Interim Injunction Order">Interim Injunction Order</option>
+          <option value="Adjournment Order">Adjournment Order</option>
+          <option value="Hearing Reminder">Hearing Reminder SMS</option>
+          <option value="Bail Order">Bail Order Directive</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="font-size: 0.75rem; color: var(--color-text-muted); display: block; margin-bottom: 2px;">Target Vernacular</label>
+        <select id="trans-target-lang" class="form-control" style="font-size: 0.85rem; height: 38px; width: 160px;">
+          <option value="te">Telugu (తెలుగు)</option>
+          <option value="hi">Hindi (हिन्दी)</option>
+          <option value="en">English (Original)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Preset Sample Buttons -->
+    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+      <span style="font-size: 0.72rem; color: var(--color-text-muted);">Presets:</span>
+      <button class="btn btn-outline btn-sm" onclick="loadSampleText('injunction')">Interim Injunction</button>
+      <button class="btn btn-outline btn-sm" onclick="loadSampleText('summons')">Summons Notice</button>
+      <button class="btn btn-outline btn-sm" onclick="loadSampleText('bail')">Bail Directive</button>
+    </div>
+  </div>
+</div>
+
+<!-- Side-by-Side Editor & Translation View -->
+<div class="grid grid-cols-2" style="gap: var(--space-4); margin-bottom: var(--space-6);">
+  <!-- Left: Original English Text -->
+  <div class="card" style="padding: var(--space-4); display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <span style="font-weight: 700; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+        <i data-lucide="file-text" style="width: 15px; height: 15px; color: var(--color-primary);"></i>
+        Authoritative Text (English)
+      </span>
+      <span class="badge badge-accent" style="font-size: 0.68rem;">Legal Original</span>
+    </div>
+
+    <textarea id="trans-source-text" class="form-control" style="flex: 1; min-height: 320px; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.5; resize: vertical;" placeholder="Paste or type judicial text, court order, or summons notice here..."></textarea>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+      <span style="font-size: 0.72rem; color: var(--color-text-muted);">Article 348 Compliant</span>
+      <button class="btn btn-primary" onclick="executeTranslation()" style="display: inline-flex; align-items: center; gap: 6px;">
+        <i data-lucide="arrow-right-left" style="width: 15px; height: 15px;"></i>
+        <span>Translate Document</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Right: Machine Translation Output -->
+  <div class="card" style="padding: var(--space-4); display: flex; flex-direction: column;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <span style="font-weight: 700; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+        <i data-lucide="languages" style="width: 15px; height: 15px; color: var(--color-accent);"></i>
+        <span id="trans-target-title">Vernacular Translation (Telugu / Hindi)</span>
+      </span>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <button class="btn btn-outline btn-sm" onclick="copyTranslation()" title="Copy Translation">
+          <i data-lucide="copy" style="width: 14px; height: 14px;"></i> Copy
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="executeTranslation()" title="Regenerate Translation">
+          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Translation Output Display Area -->
+    <div id="trans-loading-box" style="display: none; padding: var(--space-6); text-align: center;">
+      <div style="font-size: 0.85rem; color: var(--color-accent); font-weight: 600; margin-bottom: 8px;">
+        <i data-lucide="loader" class="spin" style="width: 18px; height: 18px; vertical-align: middle;"></i> Translating with legal terminology alignment...
+      </div>
+      <div class="ai-shimmer" style="height: 18px; width: 85%; margin: 8px auto;"></div>
+      <div class="ai-shimmer" style="height: 18px; width: 95%; margin: 8px auto;"></div>
+      <div class="ai-shimmer" style="height: 18px; width: 70%; margin: 8px auto;"></div>
+    </div>
+
+    <div id="trans-output-text" style="flex: 1; min-height: 320px; background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; overflow-y: auto;">
+      <em>Click 'Translate Document' to generate verified vernacular translation with statutory terminology preservation.</em>
+    </div>
+
+    <!-- Rating & Human Review Footer -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid var(--color-border); padding-top: 8px; font-size: 0.72rem; color: var(--color-text-muted);">
+      <span class="badge badge-outline" style="font-size: 0.65rem;">⚖️ AI-generated, review before use</span>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span>Rate Accuracy:</span>
+        <button onclick="rateAIFeature('translation', 'helpful')" title="Helpful" style="background:none; border:none; cursor:pointer;">👍</button>
+        <button onclick="rateAIFeature('translation', 'wrong')" title="Inaccurate" style="background:none; border:none; cursor:pointer;">👎</button>
+        <span id="trans-feedback-status" style="color: var(--color-success); margin-left: 4px;"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAMPLES = {
+  injunction: `IN THE COURT OF THE DISTRICT JUDGE
+Case No: COM/2026/00109
+
+ORDER OF INTERIM INJUNCTION
+Upon hearing counsel for the plaintiff and upon reading the application supported by affidavit, it is ordered that the respondent/defendants, their agents and servants are hereby restrained by an interim injunction from alienating, encumbering, or altering the physical possession of the schedule suit property until the next date of hearing.
+Parties are directed to complete pleadings within three weeks.
+Listed on 18-Dec-2026 for framing of issues.`,
+
+  summons: `SUMMONS TO DEFENDANT FOR SETTLEMENT OF ISSUES
+In the Court of Civil Judge (Senior Division)
+Case No: CIV/2026/00240
+
+To: Sri Rajesh Kumar, S/o Late Mohan Lal, Hyderabad.
+WHEREAS the plaintiff has instituted a suit against you for specific performance of agreement of sale.
+You are hereby summoned to appear in this Court in person, or by an advocate duly instructed, on 15th January 2027 at 10:30 AM to answer the claim.
+TAKE NOTICE that in default of your appearance, the suit will be heard and determined ex-parte in your absence.`,
+
+  bail: `ORDER DIRECTING RELEASE ON REGULAR BAIL
+In the Court of Metropolitan Sessions Judge
+Case No: CRL/2026/00388
+
+Heard learned Public Prosecutor and counsel for petitioner/accused.
+Considering that investigation is substantially complete and petitioner has co-operated with interrogation, the petitioner is admitted to bail on furnishing a personal bond for Rs. 50,000/- with two solvent sureties for the like sum to the satisfaction of the trial magistrate.
+Petitioner shall not tamper with prosecution evidence and shall attend trial on every scheduled hearing.`
+};
+
+function loadSampleText(key) {
+  if (SAMPLES[key]) {
+    document.getElementById('trans-source-text').value = SAMPLES[key];
+    if (key === 'summons') document.getElementById('trans-doc-type').value = 'Court Notice';
+    else if (key === 'injunction') document.getElementById('trans-doc-type').value = 'Interim Injunction Order';
+    else if (key === 'bail') document.getElementById('trans-doc-type').value = 'Bail Order';
+  }
+}
+
+async function executeTranslation() {
+  const text = document.getElementById('trans-source-text').value.trim();
+  const targetLang = document.getElementById('trans-target-lang').value;
+  const docType = document.getElementById('trans-doc-type').value;
+
+  if (!text) {
+    alert('Please enter or select sample text to translate.');
+    return;
+  }
+
+  const loading = document.getElementById('trans-loading-box');
+  const output = document.getElementById('trans-output-text');
+  loading.style.display = 'block';
+  output.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/ai/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: text,
+        source_lang: 'en',
+        target_lang: targetLang,
+        doc_type: docType
+      })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    output.style.display = 'block';
+
+    if (data.translated_text) {
+      output.textContent = data.translated_text;
+      document.getElementById('trans-target-title').textContent = `Vernacular Translation (${data.target_language})`;
+    } else {
+      output.textContent = data.error || 'Translation failed to generate.';
+    }
+  } catch (e) {
+    loading.style.display = 'none';
+    output.style.display = 'block';
+    output.textContent = 'Translation service error: ' + e.message;
+  }
+}
+
+function copyTranslation() {
+  const text = document.getElementById('trans-output-text').textContent;
+  if (!text || text.startsWith('Click')) return;
+  navigator.clipboard.writeText(text);
+  alert('Translated text copied to clipboard.');
+}
+
+async function rateAIFeature(feature, rating) {
+  try {
+    await fetch('/api/ai/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        feature: feature,
+        rating: rating,
+        prompt: document.getElementById('trans-source-text').value.slice(0, 100),
+        response_text: document.getElementById('trans-output-text').textContent.slice(0, 100)
+      })
+    });
+    document.getElementById('trans-feedback-status').textContent = 'Feedback saved!';
+  } catch(e) {}
+}
+
+// Load default sample
+loadSampleText('injunction');
+</script>
+{% endblock %}

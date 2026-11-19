@@ -1,0 +1,1228 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Court Master / Registry Clerk Console - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+
+  <!-- 1. PAGE HEADER (Linear / Stripe Command Style) -->
+  <div class="dashboard-page-header">
+    <div class="header-left">
+      <div class="header-eyebrow">
+        <span class="role-chip" style="background: rgba(37, 99, 235, 0.12); color: var(--color-info);">
+          <i data-lucide="monitor" style="width: 12px; height: 12px;"></i> Court Master Desk
+        </span>
+        <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
+          <span class="status-indicator live"></span> Central Registry Hub &bull; Delhi Judicial Jurisdiction
+        </span>
+      </div>
+      <h1 class="page-title">Master Calling List & Electronic Intake</h1>
+      <p class="page-subtitle">
+        Presiding Officer: <strong>{{ user.full_name }}</strong> &bull; Multi-stage petition registration, AI collision detection, docket filing, and live cause list management.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="scrollToSection('calling-list-section')">
+        <i data-lucide="list-ordered"></i> Cause List
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="openModal('schedule-hearing-modal')">
+        <i data-lucide="calendar-plus"></i> Schedule Hearing
+      </button>
+      <button class="btn btn-accent btn-sm" onclick="scrollToSection('register-wizard-section')">
+        <i data-lucide="plus-circle"></i> Intake Wizard
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. KPI METRICS ROW -->
+  <div class="kpi-grid" style="margin-bottom: var(--space-6);">
+    <!-- KPI 1 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Today's Cause List</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="arrow-up-right" style="width: 12px; height: 12px;"></i> +3 listed
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="{{ hearings|length if hearings else 14 }}">{{ hearings|length if hearings else 14 }}</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 12L26 15L38 8L50 11L62 4" stroke="var(--color-info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Active listings across 5 benches</div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Petitions Registered</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="arrow-up-right" style="width: 12px; height: 12px;"></i> +18% wk
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="38">38</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 20L14 16L26 18L38 10L50 6L62 2" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Auto-assigned CNR numbers</div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Dockets & Exhibits</span>
+        <span class="kpi-delta neutral">
+          <i data-lucide="minus" style="width: 12px; height: 12px;"></i> +12 today
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="146">146</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 14L14 14L26 10L38 12L50 7L62 5" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">SHA-256 sealed PDF filings</div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Registry Fee Reconciled</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check" style="width: 12px; height: 12px;"></i> 100%
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" style="font-size: 1.55rem;">₹ 54,200</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 16L14 15L26 12L38 11L50 6L62 3" stroke="var(--color-primary-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Daily Treasury clearance active</div>
+    </div>
+  </div>
+
+  <!-- 3. QUICK-ACTION PROTOCOL GRID -->
+  <div class="grid grid-cols-4" style="margin-bottom: var(--space-8); gap: var(--space-4);">
+    <!-- Action 1 -->
+    <div class="card card-hover" style="cursor: pointer; padding: var(--space-5); border: 1px solid var(--color-border); transition: all 0.2s ease;" onclick="scrollToSection('register-wizard-section')">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+        <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(201, 162, 75, 0.12); display: flex; align-items: center; justify-content: center; color: var(--color-accent);">
+          <i data-lucide="file-plus-2" style="width: 20px; height: 20px;"></i>
+        </div>
+        <span class="badge badge-accent" style="font-size: 0.65rem;">STAGE 1-4</span>
+      </div>
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">Electronic Intake</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); line-height: 1.4; margin: 0;">
+        Launch guided 4-step wizard with party auto-checks and CNR generation.
+      </p>
+    </div>
+
+    <!-- Action 2 -->
+    <div class="card card-hover" style="cursor: pointer; padding: var(--space-5); border: 1px solid var(--color-border); transition: all 0.2s ease;" onclick="openModal('schedule-hearing-modal')">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+        <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.12); display: flex; align-items: center; justify-content: center; color: var(--color-info);">
+          <i data-lucide="calendar-clock" style="width: 20px; height: 20px;"></i>
+        </div>
+        <span class="badge badge-info" style="font-size: 0.65rem;">AI ASSIST</span>
+      </div>
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">Schedule Listing</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); line-height: 1.4; margin: 0;">
+        Allocate hearing slot with real-time judge collision avoidance.
+      </p>
+    </div>
+
+    <!-- Action 3 -->
+    <div class="card card-hover" style="cursor: pointer; padding: var(--space-5); border: 1px solid var(--color-border); transition: all 0.2s ease;" onclick="openModal('clerk-upload-modal')">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+        <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center; color: var(--color-success);">
+          <i data-lucide="upload-cloud" style="width: 20px; height: 20px;"></i>
+        </div>
+        <span class="badge badge-success" style="font-size: 0.65rem;">DIGITAL SEAL</span>
+      </div>
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">Upload Document</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); line-height: 1.4; margin: 0;">
+        File pleadings, affidavits, and annexures into the digital case docket.
+      </p>
+    </div>
+
+    <!-- Action 4 -->
+    <div class="card card-hover" style="cursor: pointer; padding: var(--space-5); border: 1px solid var(--color-border); transition: all 0.2s ease;" onclick="openModal('clerk-fee-modal')">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+        <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(139, 92, 246, 0.12); display: flex; align-items: center; justify-content: center; color: #6D28D9;">
+          <i data-lucide="receipt" style="width: 20px; height: 20px;"></i>
+        </div>
+        <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #6D28D9; font-size: 0.65rem;">TREASURY</span>
+      </div>
+      <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">Record Court Fee</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); line-height: 1.4; margin: 0;">
+        Generate official electronic stamp duty receipt with GRN reference.
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. MASTER CALLING LIST & CAUSE LIST DOCKET -->
+  <section id="calling-list-section" class="card" style="margin-bottom: var(--space-8); padding: 0; overflow: hidden; border: 1px solid var(--color-border);">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div>
+          <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Daily Master Calling List</h3>
+          <p class="card-subtitle" style="font-size: 0.78rem; margin: 0;">Real-time cause list schedule with bench caller and order recording.</p>
+        </div>
+        <div class="filter-chips">
+          <button class="filter-chip-btn active" onclick="filterCallingList('All', this)">All ({{ hearings|length if hearings else 0 }})</button>
+          <button class="filter-chip-btn" onclick="filterCallingList('Scheduled', this)">Scheduled</button>
+          <button class="filter-chip-btn" onclick="filterCallingList('Completed', this)">Completed</button>
+          <button class="filter-chip-btn" onclick="filterCallingList('Adjourned', this)">Adjourned</button>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <div class="search-input-wrapper">
+          <i data-lucide="search"></i>
+          <input type="text" id="calling-search-input" class="form-control" placeholder="Search case # or title..." oninput="searchCallingList(this.value)">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="printCauseList()">
+          <i data-lucide="printer"></i> Print Cause List
+        </button>
+      </div>
+    </div>
+
+    <!-- Formal Print Header (Visible only when printed) -->
+    <div class="court-print-header" style="display: none;">
+      <div class="court-print-emblem">§</div>
+      <div class="court-print-title">HIGH COURT OF DELHI : CENTRAL REGISTRY</div>
+      <div class="court-print-sub">DAILY MASTER CAUSE LIST & BENCH CALLING ROSTER</div>
+      <div style="font-size: 9pt; margin-top: 4pt; font-family: monospace;">Listing Date: {{ hearings[0].scheduled_at.strftime('%d-%m-%Y') if hearings else 'Current Date' }} &bull; Court Master: {{ user.full_name }}</div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" id="master-calling-table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">Item</th>
+            <th>Case Docket</th>
+            <th>Courtroom & Bench</th>
+            <th>Scheduled Listing</th>
+            <th>Purpose</th>
+            <th>Status</th>
+            <th style="text-align: right; min-width: 180px;">Bench Calling</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if hearings %}
+            {% for h in hearings %}
+              <tr class="calling-row" data-status="{{ h.status }}" data-case="{{ h.case.case_number if h.case else '' }}" data-title="{{ h.case.title if h.case else '' }}">
+                <td style="font-family: var(--font-mono); font-weight: 700; color: var(--color-text-muted);">
+                  #{{ loop.index }}
+                </td>
+                <td>
+                  <div style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary-dark); font-size: 0.84rem;">
+                    {{ h.case.case_number if h.case else 'CASE/' ~ h.case_id }}
+                  </div>
+                  <div style="font-size: 0.8rem; font-weight: 600; color: var(--color-text); max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ h.case.title if h.case else 'Matter In Re' }}
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size: 0.82rem; font-weight: 600; color: var(--color-text);">
+                    {{ h.courtroom.name if h.courtroom else 'Courtroom 1' }}
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--color-text-muted);">
+                    {{ h.judge.full_name if h.judge else 'Hon. Presiding Bench' }}
+                  </div>
+                </td>
+                <td>
+                  <div style="font-family: var(--font-mono); font-weight: 600; font-size: 0.82rem; color: var(--color-text);">
+                    {{ h.scheduled_at.strftime('%d-%m-%Y') }}
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 4px;">
+                    <i data-lucide="clock" style="width: 11px; height: 11px;"></i> {{ h.scheduled_at.strftime('%I:%M %p') }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-primary" style="font-size: 0.72rem;">
+                    {{ h.purpose or 'Arguments on Admission' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-pill {% if h.status == 'Scheduled' %}status-hearing{% elif h.status == 'Completed' %}status-disposed{% elif h.status == 'Adjourned' %}status-filed{% else %}status-registered{% endif %}">
+                    <span class="status-dot"></span> {{ h.status }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <div style="display: inline-flex; gap: var(--space-2);">
+                    <button class="btn btn-outline btn-sm" onclick="callMatterToCourt('{{ h.case.case_number if h.case else h.case_id }}', '{{ h.courtroom.name if h.courtroom else 'Courtroom 1' }}')">
+                      <i data-lucide="volume-2" style="width: 12px; height: 12px;"></i> Call
+                    </button>
+                    {% if h.case_id %}
+                      <button class="btn btn-outline btn-sm" onclick="openCaseDrawer({{ h.case_id }})">
+                        <i data-lucide="folder" style="width: 12px; height: 12px;"></i> Docket
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: var(--space-10); color: var(--color-text-muted);">
+                <i data-lucide="calendar" style="width: 40px; height: 40px; stroke-width: 1.2; margin-bottom: var(--space-2); color: var(--color-text-muted);"></i>
+                <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-text);">No Hearings Listed Today</div>
+                <p style="font-size: 0.8rem; margin-top: 4px;">Use the Schedule Hearing button to allocate proceedings to benches.</p>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Formal Print Signature Block (Visible only when printed) -->
+    <div class="court-print-signature" style="display: none; padding: 16pt;">
+      <div class="court-print-qr">
+        <div class="court-print-qr-box">
+          [QR VERIFIED]<br>DLHC-CAUSE
+        </div>
+        <div>
+          <strong>Authentic Daily Cause List</strong><br>
+          Digitally signed by Court Master Desk<br>
+          Central Registry &bull; High Court of Delhi
+        </div>
+      </div>
+      <div class="court-print-sign-title">
+        <strong>{{ user.full_name }}</strong><br>
+        Court Master / Bench Calling Officer<br>
+        High Court of Delhi
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. MULTI-STEP CASE REGISTRATION WIZARD -->
+  <section id="register-wizard-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-md);">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-2);">
+          <span class="status-indicator live"></span> Electronic Registry Intake Protocol
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.35rem; color: var(--color-text);">Electronic Case Registration & CNR Issuance</h3>
+        <p class="card-subtitle" style="font-size: 0.85rem; color: var(--color-text-muted);">
+          Standard 4-Stage Protocol: Dispute Particulars &bull; Litigants & Advocates &bull; Evidence & AI Scrutiny &bull; Statutory Fee & CNR Creation.
+        </p>
+      </div>
+      <span class="badge badge-primary" style="font-size: 0.75rem;">Stage 1 of 4</span>
+    </div>
+
+    <div style="padding: var(--space-6);">
+      <!-- Stepper Progress Header -->
+      <div class="stepper-container" style="max-width: 680px; margin: 0 auto var(--space-8) auto;">
+        <div class="stepper-progress-bar">
+          <div id="wizard-progress-fill" class="stepper-progress-fill" style="width: 25%;"></div>
+        </div>
+        <div class="step-node active" id="step-node-1" onclick="goToWizardStep(1)" style="cursor: pointer;">
+          <div class="step-circle">1</div>
+          <div class="step-label">Particulars</div>
+        </div>
+        <div class="step-node" id="step-node-2" onclick="goToWizardStep(2)" style="cursor: pointer;">
+          <div class="step-circle">2</div>
+          <div class="step-label">Parties</div>
+        </div>
+        <div class="step-node" id="step-node-3" onclick="goToWizardStep(3)" style="cursor: pointer;">
+          <div class="step-circle">3</div>
+          <div class="step-label">Documents</div>
+        </div>
+        <div class="step-node" id="step-node-4" onclick="goToWizardStep(4)" style="cursor: pointer;">
+          <div class="step-circle">4</div>
+          <div class="step-label">Fees & Review</div>
+        </div>
+      </div>
+
+      <!-- FEATURE 3: SMART DOCUMENT INTELLIGENCE & OCR AUTO-FILL -->
+      <div class="card" style="margin-bottom: var(--space-6); background: var(--color-surface-subtle); border: 2px dashed rgba(201,162,75,0.5); padding: var(--space-4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(201,162,75,0.2); display: flex; align-items: center; justify-content: center; color: var(--color-accent);">
+              <i data-lucide="scan-line" style="width: 15px; height: 15px;"></i>
+            </div>
+            <div>
+              <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--color-text); margin: 0;">Smart Document Intelligence & OCR Auto-Fill</h4>
+              <div style="font-size: 0.72rem; color: var(--color-text-muted);">OCR scanned petitions/complaints to extract parties, sections, and claim values with inconsistency detection.</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <span class="badge badge-outline" style="font-size: 0.62rem;">⚖️ AI-generated, review before use</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadSampleOcrPlaint('commercial')" style="font-size: 0.72rem; padding: 2px 8px;">Sample Commercial Plaint</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="loadSampleOcrPlaint('cheque')" style="font-size: 0.72rem; padding: 2px 8px;">Sample Cheque Complaint</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <label for="ocr-doc-file" class="sr-only">Upload scanned petition document for OCR</label>
+          <input type="file" id="ocr-doc-file" class="form-control" style="font-size: 0.8rem; padding: 4px;" accept=".pdf,.png,.jpg,.jpeg,.txt" aria-label="Upload scanned petition document for OCR">
+          <button type="button" class="btn btn-primary btn-sm" onclick="executeOcrExtraction()" style="white-space: nowrap; height: 34px;">
+            <i data-lucide="cpu" style="width: 14px; height: 14px; margin-right: 4px;"></i> Scan & Extract Intelligence
+          </button>
+        </div>
+
+        <!-- Hidden container for text sample when testing without file upload -->
+        <input type="hidden" id="ocr-text-sample-buffer" value="">
+
+        <div id="ocr-loading" style="display: none; padding: 8px; text-align: center;">
+          <div style="font-size: 0.78rem; color: var(--color-accent); font-weight: 600;">
+            <i data-lucide="loader" class="spin" style="width: 14px; height: 14px; vertical-align: middle;"></i> Performing OCR & parsing structured petition intelligence...
+          </div>
+        </div>
+
+        <!-- Extraction Findings Display -->
+        <div id="ocr-results-box" style="display: none; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 10px; margin-top: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <strong style="font-size: 0.8rem; color: var(--color-accent);">Extracted Form Entities:</strong>
+            <button type="button" class="btn btn-success btn-sm" onclick="applyOcrToForm()" style="font-size: 0.72rem; padding: 2px 8px;">
+              <i data-lucide="check" style="width: 12px; height: 12px; margin-right: 2px;"></i> Confirm & Auto-Fill Form Fields
+            </button>
+          </div>
+
+          <div id="ocr-entities-summary" style="font-size: 0.78rem; line-height: 1.45; color: var(--color-text);"></div>
+
+          <!-- Inconsistencies flag list -->
+          <div id="ocr-inconsistencies-area" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--color-border); font-size: 0.74rem;"></div>
+
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 6px; font-size: 0.68rem; color: var(--color-text-muted);">
+            <span>Extraction Accurate?</span>
+            <button type="button" onclick="rateAIFeature('ocr_intelligence', 'helpful')" style="background:none; border:none; cursor:pointer;">👍</button>
+            <button type="button" onclick="rateAIFeature('ocr_intelligence', 'wrong')" style="background:none; border:none; cursor:pointer;">👎</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wizard Form -->
+      <form id="case-wizard-form" onsubmit="submitCaseWizard(event)">
+        
+        <!-- STEP 1: PARTICULARS -->
+        <div id="wizard-step-1" class="wizard-step-panel">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--color-text); display: flex; align-items: center; gap: var(--space-2); margin: 0;">
+              <span style="display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--color-surface-subtle); border: 1px solid var(--color-border); align-items: center; justify-content: center; font-size: 0.75rem;">1</span>
+              Stage 1: Dispute Details & Territorial Jurisdiction
+            </h4>
+            <span class="text-xs text-muted">All asterisk fields are required</span>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="wiz-title">Matter Title / Case Caption <span style="color: var(--color-danger);">*</span></label>
+            <input type="text" id="wiz-title" class="form-control" placeholder="e.g. Apex Infrastructure Pvt Ltd vs. Northern Power Grid Corporation" required>
+          </div>
+
+          <div class="grid grid-cols-3">
+            <div class="form-group">
+              <label class="form-label" for="wiz-case-type">Case Category <span style="color: var(--color-danger);">*</span></label>
+              <select id="wiz-case-type" class="form-control">
+                <option value="Civil">Civil Suit</option>
+                <option value="Criminal">Criminal Case</option>
+                <option value="Writ">Writ Petition (Article 226)</option>
+                <option value="Commercial">Commercial Dispute</option>
+                <option value="Property">Property & Title</option>
+                <option value="Cheque Bounce">Cheque Bounce (Sec 138 NI)</option>
+                <option value="Family">Family / Matrimonial</option>
+                <option value="Bail">Bail Application</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="wiz-priority">Priority Rating</label>
+              <select id="wiz-priority" class="form-control">
+                <option value="Normal">Normal</option>
+                <option value="Urgent">Urgent / Vacation Bench</option>
+                <option value="High">High Priority</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="wiz-court-id">Target Court Complex</label>
+              <select id="wiz-court-id" class="form-control">
+                <option value="1">High Court of Delhi (DLHC01)</option>
+                <option value="2">Patiala House Courts (PHDC01)</option>
+                <option value="3">Saket Family Court Complex (SKFC01)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="wiz-desc">Summary of Prayers / Plaint Particulars</label>
+            <textarea id="wiz-desc" class="form-control" rows="3" placeholder="Brief factual grounds, statutory sections invoked, and prayers sought..."></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+            <button type="button" class="btn btn-primary" onclick="goToWizardStep(2)">
+              Proceed to Parties <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: PARTIES -->
+        <div id="wizard-step-2" class="wizard-step-panel" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--color-text); display: flex; align-items: center; gap: var(--space-2); margin: 0;">
+              <span style="display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--color-surface-subtle); border: 1px solid var(--color-border); align-items: center; justify-content: center; font-size: 0.75rem;">2</span>
+              Stage 2: Litigant & Counsel Particulars
+            </h4>
+            <span class="text-xs text-muted">Legal names will appear on summons</span>
+          </div>
+          
+          <div class="grid grid-cols-2" style="gap: var(--space-5);">
+            <!-- Petitioner Card -->
+            <div style="background: var(--color-surface-subtle); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+              <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4);">
+                <span class="badge badge-info" style="font-size: 0.72rem;">PETITIONER / COMPLAINANT</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="wiz-petitioner-name">Party Full Name <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="wiz-petitioner-name" class="form-control" placeholder="e.g. Ramesh Chandra Gupta" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="wiz-petitioner-contact">Contact Email or Mobile</label>
+                <input type="text" id="wiz-petitioner-contact" class="form-control" placeholder="e.g. ramesh.gupta@example.com / 9811122233">
+              </div>
+            </div>
+
+            <!-- Respondent Card -->
+            <div style="background: var(--color-surface-subtle); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--color-border);">
+              <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4);">
+                <span class="badge badge-warning" style="font-size: 0.72rem;">RESPONDENT / ACCUSED</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="wiz-respondent-name">Party Full Name <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="wiz-respondent-name" class="form-control" placeholder="e.g. Municipal Corporation of Delhi" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="wiz-respondent-contact">Contact Email or Office Phone</label>
+                <input type="text" id="wiz-respondent-contact" class="form-control" placeholder="e.g. contact@mcd.gov.in / 011-23220000">
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+            <button type="button" class="btn btn-outline" onclick="goToWizardStep(1)">
+              <i data-lucide="arrow-left"></i> Back to Details
+            </button>
+            <button type="button" class="btn btn-primary" onclick="goToWizardStep(3)">
+              Proceed to Documents <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: DOCUMENTS DRAG & DROP -->
+        <div id="wizard-step-3" class="wizard-step-panel" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--color-text); display: flex; align-items: center; gap: var(--space-2); margin: 0;">
+              <span style="display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--color-surface-subtle); border: 1px solid var(--color-border); align-items: center; justify-content: center; font-size: 0.75rem;">3</span>
+              Stage 3: Evidence, Affidavits & AI Scrutiny
+            </h4>
+            <span class="text-xs text-muted">PDF files up to 32MB</span>
+          </div>
+
+          <!-- Polished Drag & Drop Zone -->
+          <div class="dropzone-container" id="dropzone-box" onclick="document.getElementById('wiz-file-input').click()">
+            <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(201, 162, 75, 0.12); border: 1px solid rgba(201, 162, 75, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-3) auto; color: var(--color-accent);">
+              <i data-lucide="upload-cloud" style="width: 26px; height: 26px;"></i>
+            </div>
+            <h5 style="font-size: 1rem; font-weight: 600; color: var(--color-text); margin-bottom: 4px;">
+              Drag & Drop Petition PDF or Browse Device
+            </h5>
+            <p style="font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: var(--space-4);">
+              Upload Main Plaint, Vakalatnama, Supporting Affidavits & Exhibits
+            </p>
+            <input type="file" id="wiz-file-input" style="display: none;" onchange="handleFileSelected(this)">
+            <button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation(); document.getElementById('wiz-file-input').click()">
+              <i data-lucide="folder-search"></i> Choose PDF File
+            </button>
+            <div id="selected-file-label" style="font-size: 0.85rem; color: var(--color-success); margin-top: var(--space-3); font-weight: 600;"></div>
+            
+            <!-- AI Document Auto-Tagging Preview Panel -->
+            <div id="ai-auto-tag-panel" style="display: none; margin-top: var(--space-4); text-align: left; padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-accent); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);" onclick="event.stopPropagation()"></div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+            <button type="button" class="btn btn-outline" onclick="goToWizardStep(2)">
+              <i data-lucide="arrow-left"></i> Back to Parties
+            </button>
+            <button type="button" class="btn btn-primary" onclick="goToWizardStep(4)">
+              Proceed to Fees & Review <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 4: FEES & REVIEW -->
+        <div id="wizard-step-4" class="wizard-step-panel" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--color-text); display: flex; align-items: center; gap: var(--space-2); margin: 0;">
+              <span style="display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--color-surface-subtle); border: 1px solid var(--color-border); align-items: center; justify-content: center; font-size: 0.75rem;">4</span>
+              Stage 4: Statutory Court Fees & Final Registration
+            </h4>
+            <span class="text-xs text-muted">Court fee authenticated via Judicial Treasury</span>
+          </div>
+
+          <!-- Ledger Card -->
+          <div style="background: var(--color-surface-subtle); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--color-border); margin-bottom: var(--space-6);">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border); font-size: 0.88rem; color: var(--color-text-secondary);">
+              <span>Registry Scrutiny & Electronic Stamp Duty:</span>
+              <strong style="font-family: var(--font-mono); color: var(--color-text);">₹ 500.00</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-3); font-size: 1.05rem; font-weight: 700; color: var(--color-text);">
+              <span>Total Intake Fee Payable:</span>
+              <span style="color: var(--color-success); font-family: var(--font-mono); font-size: 1.25rem;">₹ 500.00</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+            <button type="button" class="btn btn-outline" onclick="goToWizardStep(3)">
+              <i data-lucide="arrow-left"></i> Back to Documents
+            </button>
+            <button type="submit" class="btn btn-accent btn-md" style="padding: 0.75rem 1.75rem; font-weight: 600;">
+              <i data-lucide="check-circle-2"></i> Confirm Intake & Register Case
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+</div>
+
+<!-- MODAL: SCHEDULE HEARING WITH CONFLICT DETECTION -->
+<div id="schedule-hearing-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 580px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(37, 99, 235, 0.1); color: var(--color-info); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">
+          <i data-lucide="calendar-plus" style="width: 12px; height: 12px;"></i> Bench Allocation
+        </div>
+        <h3 class="card-title" style="font-size: 1.2rem; font-weight: 700; color: var(--color-text);">
+          Schedule Courtroom Hearing
+        </h3>
+        <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-top: 2px;">
+          Live conflict detection & AI smart vacancy recommendations
+        </p>
+      </div>
+      <button onclick="closeModal('schedule-hearing-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="schedule-form" onsubmit="submitScheduledHearing(event)" class="modal-body" style="padding: var(--space-6);">
+      <div class="form-group">
+        <label class="form-label" for="sched-case-id">Matter Case ID / Selection <span style="color: var(--color-danger);">*</span></label>
+        <input type="number" id="sched-case-id" class="form-control" placeholder="Enter Case ID (e.g. 1 to 25)" required>
+      </div>
+
+      <!-- AI Smart Scheduling Suggestions -->
+      <div style="margin-bottom: var(--space-4); padding: var(--space-4); background: var(--color-surface-subtle); border-radius: var(--radius-lg); border: 1px solid rgba(201,162,75,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+          <span style="font-size: 0.8rem; font-weight: 700; color: var(--color-accent); display: flex; align-items: center; gap: 4px;">
+            <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> AI Recommended Vacant Slots
+          </span>
+          <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 2px 8px;" onclick="loadAiSchedulingSlots()">
+            Find Optimal Slots
+          </button>
+        </div>
+        <div id="ai-smart-slots-list" style="display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 0.75rem; color: var(--color-text-muted);">
+            Click <strong>'Find Optimal Slots'</strong> to analyze judge workload & courtroom free windows.
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="sched-courtroom-id">Courtroom Venue <span style="color: var(--color-danger);">*</span></label>
+          <select id="sched-courtroom-id" class="form-control">
+            <option value="1">Courtroom 1 (Chief Justice Bench)</option>
+            <option value="2">Courtroom 4 (Commercial Bench)</option>
+            <option value="3">Courtroom 101 (Special Sessions)</option>
+            <option value="4">Courtroom 105 (Metropolitan Mag.)</option>
+            <option value="5">Family Courtroom 2 (Saket)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sched-datetime">Date & Time Slot <span style="color: var(--color-danger);">*</span></label>
+          <input type="datetime-local" id="sched-datetime" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="sched-purpose">Purpose of Listing <span style="color: var(--color-danger);">*</span></label>
+        <input type="text" id="sched-purpose" class="form-control" value="Arguments on Admission" required>
+      </div>
+
+      <!-- Conflict Warning Box -->
+      <div id="sched-conflict-warning" class="alert alert-danger" style="display: none; margin-top: var(--space-3);"></div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('schedule-hearing-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="calendar-plus"></i> Schedule Hearing
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: CLERK UPLOAD CASE DOCUMENT -->
+<div id="clerk-upload-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 520px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(16, 185, 129, 0.1); color: var(--color-success); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">
+          <i data-lucide="upload-cloud" style="width: 12px; height: 12px;"></i> Case Records Intake
+        </div>
+        <h3 class="card-title" style="font-size: 1.2rem; font-weight: 700; color: var(--color-text);">Upload Judicial Exhibit / Pleadings</h3>
+      </div>
+      <button onclick="closeModal('clerk-upload-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="clerk-upload-form" onsubmit="submitClerkDocUpload(event)" class="modal-body" style="padding: var(--space-6);">
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="clerk-up-case-id">Case ID <span style="color: var(--color-danger);">*</span></label>
+          <input type="number" id="clerk-up-case-id" class="form-control" placeholder="e.g. 1" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="clerk-up-doc-type">Document Category</label>
+          <select id="clerk-up-doc-type" class="form-control">
+            <option value="Plaint">Plaint / Petition</option>
+            <option value="Written Statement">Written Statement</option>
+            <option value="Affidavit">Supporting Affidavit</option>
+            <option value="Evidence">Documentary Evidence / Annexure</option>
+            <option value="Order">Certified Interim Order</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Attachment Document (PDF) <span style="color: var(--color-danger);">*</span></label>
+        <input type="file" id="clerk-up-file" class="form-control" accept=".pdf" required>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('clerk-upload-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="upload-cloud"></i> Upload & File to Docket
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: CLERK RECORD STATUTORY COURT FEE -->
+<div id="clerk-fee-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(139, 92, 246, 0.1); color: #8B5CF6; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">
+          <i data-lucide="receipt" style="width: 12px; height: 12px;"></i> Treasury Ledger
+        </div>
+        <h3 class="card-title" style="font-size: 1.2rem; font-weight: 700; color: var(--color-text);">Record Statutory Court Fee</h3>
+      </div>
+      <button onclick="closeModal('clerk-fee-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="clerk-fee-form" onsubmit="submitClerkFee(event)" class="modal-body" style="padding: var(--space-6);">
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="clerk-fee-case-id">Case ID <span style="color: var(--color-danger);">*</span></label>
+          <input type="number" id="clerk-fee-case-id" class="form-control" placeholder="e.g. 1" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="clerk-fee-amount">Amount (INR) <span style="color: var(--color-danger);">*</span></label>
+          <input type="number" id="clerk-fee-amount" class="form-control" value="500.00" step="50" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="clerk-fee-purpose">Fee Purpose / Head</label>
+        <select id="clerk-fee-purpose" class="form-control">
+          <option value="E-Court Registration Stamp">E-Court Registration Stamp</option>
+          <option value="Certified Copy Application">Certified Copy Application</option>
+          <option value="Process Fee / Summons Service">Process Fee / Summons Service</option>
+          <option value="Vakalatnama Welfare Stamp">Vakalatnama Welfare Stamp</option>
+        </select>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('clerk-fee-modal')">Cancel</button>
+        <button type="submit" class="btn btn-success">
+          <i data-lucide="check-circle-2"></i> Record & Issue GRN
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function goToWizardStep(step) {
+  // Validate Step 1
+  if (step === 2) {
+    const title = document.getElementById('wiz-title').value.trim();
+    if (!title) {
+      showToast('Please enter a matter title.', 'warning');
+      return;
+    }
+  }
+  // Validate Step 2
+  if (step === 3) {
+    const pet = document.getElementById('wiz-petitioner-name').value.trim();
+    const resp = document.getElementById('wiz-respondent-name').value.trim();
+    if (!pet || !resp) {
+      showToast('Petitioner and Respondent names are required.', 'warning');
+      return;
+    }
+  }
+
+  document.querySelectorAll('.wizard-step-panel').forEach(p => p.style.display = 'none');
+  document.getElementById(`wizard-step-${step}`).style.display = 'block';
+
+  // Update Stepper circles
+  document.querySelectorAll('.step-node').forEach((node, idx) => {
+    node.classList.remove('active', 'completed');
+    if (idx + 1 < step) node.classList.add('completed');
+    if (idx + 1 === step) node.classList.add('active');
+  });
+
+  const progressPercentages = { 1: '25%', 2: '50%', 3: '75%', 4: '100%' };
+  document.getElementById('wizard-progress-fill').style.width = progressPercentages[step];
+}
+
+async function handleFileSelected(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    document.getElementById('selected-file-label').textContent = `✓ Selected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+    
+    // AI Document Auto-Tagging
+    const panel = document.getElementById('ai-auto-tag-panel');
+    if (panel) {
+      panel.style.display = 'block';
+      panel.innerHTML = '<span style="font-size:0.75rem; color:var(--color-accent);"><i data-lucide="sparkles" class="spin" style="width:12px;height:12px;"></i> AI analyzing document structure and extracting entities...</span>';
+      if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/ai/auto-tag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name })
+        });
+        const data = await res.json();
+        
+        const datesStr = (data.extracted_entities && data.extracted_entities.dates && data.extracted_entities.dates.length) ? data.extracted_entities.dates.join(', ') : 'None detected';
+        const sectionsStr = (data.extracted_entities && data.extracted_entities.statutory_sections && data.extracted_entities.statutory_sections.length) ? data.extracted_entities.statutory_sections.join(', ') : 'General Act';
+        
+        panel.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-size:0.8rem; font-weight:700; color:var(--color-accent); display:flex; align-items:center; gap:4px;">
+              <i data-lucide="sparkles" style="width:13px;height:13px;"></i> AI Suggested Category: <span class="badge badge-accent" style="margin-left:4px;">${data.suggested_doc_type || 'Petition'}</span>
+            </span>
+            <span class="badge badge-outline" style="font-size:0.65rem;">Confidence: ${data.confidence || 94}%</span>
+          </div>
+          <div style="font-size:0.75rem; color:var(--color-text-muted);">
+            Detected Statutes: <strong>${sectionsStr}</strong> &bull; Key Dates: <strong>${datesStr}</strong>
+          </div>
+        `;
+        if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+      } catch (err) {
+        panel.style.display = 'none';
+      }
+    }
+  }
+}
+
+async function loadAiSchedulingSlots() {
+  const container = document.getElementById('ai-smart-slots-list');
+  const courtroomId = document.getElementById('sched-courtroom-id').value;
+  container.innerHTML = '<span style="font-size:0.75rem; color:var(--color-accent);"><i data-lucide="sparkles" class="spin" style="width:12px;height:12px;"></i> Computing optimal conflict-free windows & bench workload...</span>';
+  if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+
+  try {
+    const res = await fetch(`/api/ai/smart-schedule-slots?court_id=1&courtroom_id=${courtroomId}&judge_id=3`);
+    const data = await res.json();
+    const slots = data.slots || [];
+
+    if (slots.length === 0) {
+      container.innerHTML = '<span style="font-size:0.75rem; color:var(--color-warning);">No vacant slots found in immediate window.</span>';
+      return;
+    }
+
+    container.innerHTML = slots.map(s => `
+      <div style="padding: 0.4rem 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.15s ease;" onclick="selectAiSlot('${s.slot_datetime}')" onmouseover="this.style.background='var(--color-surface-subtle)'" onmouseout="this.style.background='var(--color-surface)'">
+        <div>
+          <div style="font-weight: 700; font-size: 0.8rem; color: var(--color-primary-dark);">${s.display_date} &bull; ${s.display_time}</div>
+          <div style="font-size: 0.7rem; color: var(--color-text-muted);">${s.recommendation_reason}</div>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.7rem; padding: 2px 6px;">Select</button>
+      </div>
+    `).join('');
+    if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+  } catch (err) {
+    container.innerHTML = '<span style="font-size:0.75rem; color:var(--color-danger);">Failed to load scheduling suggestions.</span>';
+  }
+}
+
+function selectAiSlot(dtStr) {
+  document.getElementById('sched-datetime').value = dtStr;
+  showToast('Selected AI Recommended Hearing Slot!', 'success');
+}
+
+async function submitCaseWizard(e) {
+  e.preventDefault();
+  const title = document.getElementById('wiz-title').value.trim();
+  const caseType = document.getElementById('wiz-case-type').value;
+  const priority = document.getElementById('wiz-priority').value;
+  const courtId = document.getElementById('wiz-court-id').value;
+  const desc = document.getElementById('wiz-desc').value.trim();
+  const petName = document.getElementById('wiz-petitioner-name').value.trim();
+  const respName = document.getElementById('wiz-respondent-name').value.trim();
+
+  try {
+    const res = await fetch('/api/clerk/cases/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title, case_type: caseType, priority, court_id: courtId,
+        description: desc, petitioner_name: petName, respondent_name: respName
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`Case Intake Complete! Registered as ${data.case_number}`, 'success', 6000);
+      document.getElementById('case-wizard-form').reset();
+      goToWizardStep(1);
+    }
+  } catch(err) {
+    showToast('Failed to register case.', 'danger');
+  }
+}
+
+async function submitScheduledHearing(e) {
+  e.preventDefault();
+  const caseId = document.getElementById('sched-case-id').value;
+  const courtroomId = document.getElementById('sched-courtroom-id').value;
+  const dt = document.getElementById('sched-datetime').value;
+  const purpose = document.getElementById('sched-purpose').value;
+  const conflictWarn = document.getElementById('sched-conflict-warning');
+  conflictWarn.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/clerk/hearings/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, courtroom_id: courtroomId, scheduled_at: dt, purpose })
+    });
+
+    if (res.status === 409) {
+      const err = await res.json();
+      conflictWarn.textContent = err.message;
+      conflictWarn.style.display = 'flex';
+      showToast('Hearing slot collision detected!', 'danger');
+    } else if (res.ok) {
+      const data = await res.json();
+      showToast(`Hearing successfully scheduled for ${data.scheduled_at}`, 'success');
+      closeModal('schedule-hearing-modal');
+      setTimeout(() => location.reload(), 1500);
+    }
+  } catch(err) {
+    showToast('Error scheduling hearing.', 'danger');
+  }
+}
+
+async function submitClerkDocUpload(e) {
+  e.preventDefault();
+  const caseId = document.getElementById('clerk-up-case-id').value;
+  const docType = document.getElementById('clerk-up-doc-type').value;
+  const fileInput = document.getElementById('clerk-up-file');
+
+  if (!fileInput.files || !fileInput.files[0]) return;
+
+  const fd = new FormData();
+  fd.append('case_id', caseId);
+  fd.append('doc_type', docType);
+  fd.append('file', fileInput.files[0]);
+
+  try {
+    const res = await fetch('/api/clerk/documents/upload', {
+      method: 'POST',
+      body: fd
+    });
+    if (res.ok) {
+      showToast('Document uploaded and stamped in digital case file.', 'success');
+      closeModal('clerk-upload-modal');
+      document.getElementById('clerk-upload-form').reset();
+    }
+  } catch(err) {
+    showToast('Failed to upload document.', 'danger');
+  }
+}
+
+async function submitClerkFee(e) {
+  e.preventDefault();
+  const caseId = document.getElementById('clerk-fee-case-id').value;
+  const amount = parseFloat(document.getElementById('clerk-fee-amount').value);
+  const purpose = document.getElementById('clerk-fee-purpose').value;
+
+  try {
+    const res = await fetch('/api/litigant/pay-fee', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, amount, purpose })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`Court Fee Recorded! GRN Ref: ${data.reference}`, 'success', 6000);
+      closeModal('clerk-fee-modal');
+      document.getElementById('clerk-fee-form').reset();
+    }
+  } catch(err) {
+    showToast('Failed to record court fee.', 'danger');
+  }
+}
+
+function callMatterToCourt(caseNumber, courtroom) {
+  showToast(`Calling Matter ${caseNumber} in ${courtroom}. Summons bell triggered.`, 'info');
+}
+
+function filterCallingList(status, btn) {
+  document.querySelectorAll('.filter-chips .filter-chip-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const rows = document.querySelectorAll('.calling-row');
+  rows.forEach(r => {
+    if (status === 'All' || r.getAttribute('data-status') === status) {
+      r.style.display = '';
+    } else {
+      r.style.display = 'none';
+    }
+  });
+}
+
+function searchCallingList(q) {
+  const query = q.toLowerCase().trim();
+  const rows = document.querySelectorAll('.calling-row');
+  rows.forEach(r => {
+    const caseNum = (r.getAttribute('data-case') || '').toLowerCase();
+    const title = (r.getAttribute('data-title') || '').toLowerCase();
+    if (!query || caseNum.includes(query) || title.includes(query)) {
+      r.style.display = '';
+    } else {
+      r.style.display = 'none';
+    }
+  });
+}
+
+function printCauseList() {
+  window.print();
+}
+
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initStatCountUp === 'function') initStatCountUp();
+
+  const dropBox = document.getElementById('dropzone-box');
+  const fileInput = document.getElementById('wiz-file-input');
+  if (dropBox && fileInput) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropBox.classList.add('drag-over');
+      }, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropBox.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropBox.classList.remove('drag-over');
+      }, false);
+    });
+    dropBox.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        fileInput.files = files;
+        handleFileSelected(fileInput);
+      }
+    }, false);
+  }
+});
+
+let lastExtractedFields = null;
+
+const OCR_SAMPLES = {
+  commercial: `IN THE COURT OF THE COMMERCIAL DISTRICT JUDGE
+COMMERCIAL SUIT NO: CS(COMM)/2026/00481
+
+BETWEEN:
+Apex Infra Projects Ltd., 
+having registered office at Plot 44, Barakhamba Road, New Delhi
+...PLAINTIFF / PETITIONER
+
+VERSUS
+
+Northern Grid Power Transmission Corporation,
+having office at 12 Sansad Marg, New Delhi
+...DEFENDANT / RESPONDENT
+
+PLAINT UNDER ORDER VII RULE 1 READ WITH SECTION 2(1)(c) COMMERCIAL COURTS ACT 2015
+The Plaintiff institutes this commercial suit claiming recovery of outstanding engineering milestones amounting to Rs. 14,85,000/- with pendente lite interest at 18% per annum.
+Cause of action arose on 14-Aug-2025 when Defendant wrongfully withheld certified running bills.
+PRAYER:
+(a) Pass a money decree for Rs. 14,85,000/- in favour of Plaintiff;
+(b) Award pendente lite and future interest at 18% per annum.`,
+
+  cheque: `IN THE COURT OF METROPOLITAN MAGISTRATE (NI ACT)
+CRIMINAL COMPLAINT UNDER SECTION 138 NEGOTIABLE INSTRUMENTS ACT 1881
+
+Sunil Mehra, S/o J.K. Mehra,
+R/o Flat 204, GK-I, New Delhi
+...COMPLAINANT
+
+VERSUS
+
+Vikas Malhotra, Proprietor M/s Malhotra Traders,
+R/o B-12 Lajpat Nagar, New Delhi
+...ACCUSED
+
+COMPLAINT FOR CHEQUE BOUNCE
+Accused issued Cheque No. 440912 dated 02-10-2025 for Rs. 3,50,000/- drawn on HDFC Bank, which was returned dishonoured with remark 'Funds Insufficient'.
+Statutory demand notice dated 12-10-2025 sent via registered post was duly delivered, yet accused failed to tender payment within 15 days.`
+};
+
+function loadSampleOcrPlaint(type) {
+  const text = OCR_SAMPLES[type] || OCR_SAMPLES['commercial'];
+  document.getElementById('ocr-text-sample-buffer').value = text;
+  showToast(`Loaded sample ${type} petition into OCR buffer. Click 'Scan & Extract Intelligence'.`, 'info');
+}
+
+async function executeOcrExtraction() {
+  const fileInput = document.getElementById('ocr-doc-file');
+  const bufferText = document.getElementById('ocr-text-sample-buffer').value;
+  const loading = document.getElementById('ocr-loading');
+  const resultsBox = document.getElementById('ocr-results-box');
+  const summaryEl = document.getElementById('ocr-entities-summary');
+  const inconsistEl = document.getElementById('ocr-inconsistencies-area');
+
+  loading.style.display = 'block';
+  resultsBox.style.display = 'none';
+
+  try {
+    let res;
+    if (fileInput.files.length > 0) {
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      res = await fetch('/api/ai/ocr-extract', {
+        method: 'POST',
+        body: formData
+      });
+    } else if (bufferText) {
+      res = await fetch('/api/ai/ocr-extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text_sample: bufferText, filename: 'sample_petition.txt' })
+      });
+    } else {
+      // Default to commercial sample if empty
+      loadSampleOcrPlaint('commercial');
+      return executeOcrExtraction();
+    }
+
+    const data = await res.json();
+    loading.style.display = 'none';
+    resultsBox.style.display = 'block';
+
+    if (data.extracted_fields) {
+      lastExtractedFields = data.extracted_fields;
+      const ef = data.extracted_fields;
+
+      summaryEl.innerHTML = `
+        <div class="grid grid-cols-2" style="gap: 6px; margin-bottom: 6px;">
+          <div><strong>Petitioner:</strong> ${ef.petitioner_name || 'N/A'}</div>
+          <div><strong>Respondent:</strong> ${ef.respondent_name || 'N/A'}</div>
+          <div><strong>Case Category:</strong> ${ef.case_type || 'Civil'}</div>
+          <div><strong>Claim Amount:</strong> ${ef.claim_amount || 'Unspecified'}</div>
+          <div><strong>Statutory Sections:</strong> ${ef.statutory_sections ? ef.statutory_sections.join(', ') : 'N/A'}</div>
+          <div><strong>Relief Claimed:</strong> ${ef.relief_sought || 'N/A'}</div>
+        </div>
+      `;
+
+      if (data.inconsistencies && data.inconsistencies.length > 0) {
+        inconsistEl.innerHTML = `
+          <strong style="color: var(--color-warning);">⚠️ Discrepancy & Verification Alerts:</strong>
+          <ul style="margin: 2px 0 0 16px; padding: 0; color: var(--color-warning);">
+            ${data.inconsistencies.map(inc => `<li>${inc}</li>`).join('')}
+          </ul>
+        `;
+        inconsistEl.style.display = 'block';
+      } else {
+        inconsistEl.innerHTML = '<span style="color: var(--color-success);">✓ Party names and verification statements match consistently across document text.</span>';
+        inconsistEl.style.display = 'block';
+      }
+    }
+  } catch(e) {
+    loading.style.display = 'none';
+    showToast('OCR extraction error: ' + e.message, 'danger');
+  }
+}
+
+function applyOcrToForm() {
+  if (!lastExtractedFields) return;
+  const ef = lastExtractedFields;
+
+  if (ef.petitioner_name && ef.respondent_name) {
+    document.getElementById('wiz-title').value = `${ef.petitioner_name} vs. ${ef.respondent_name}`;
+  }
+  if (ef.case_type) {
+    const sel = document.getElementById('wiz-case-type');
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value.toLowerCase().includes(ef.case_type.toLowerCase())) {
+        sel.selectedIndex = i;
+        break;
+      }
+    }
+  }
+  if (ef.relief_sought) {
+    document.getElementById('wiz-desc').value = `Relief Sought: ${ef.relief_sought}. Statutory Sections: ${ef.statutory_sections ? ef.statutory_sections.join(', ') : 'N/A'}`;
+  }
+  if (ef.petitioner_name) {
+    document.getElementById('wiz-petitioner-name').value = ef.petitioner_name;
+  }
+  if (ef.respondent_name) {
+    document.getElementById('wiz-respondent-name').value = ef.respondent_name;
+  }
+
+  showToast('Form fields auto-filled from OCR intelligence. Please review and confirm.', 'success');
+}
+
+async function rateAIFeature(feature, rating) {
+  try {
+    await fetch('/api/ai/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: feature, rating: rating })
+    });
+    showToast('AI Feedback recorded.', 'info');
+  } catch(e) {}
+}
+
+</script>
+{% endblock %}

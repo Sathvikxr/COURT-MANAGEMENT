@@ -1,0 +1,482 @@
+{% extends "base.html" %}
+
+{% block title %}NyayaDesk - Next-Generation Judicial & Court Management Platform{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION (Linear / Stripe Marketing Hero) -->
+<section class="hero-radial-bg" style="padding: var(--space-16) 0 var(--space-12); border-bottom: 1px solid var(--color-border);">
+  <div class="container" style="text-align: center; max-width: 960px;">
+    
+    <!-- Announcement Badge -->
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); background: var(--color-surface); border: 1px solid var(--color-border); padding: 4px 12px; border-radius: var(--radius-full); box-shadow: var(--shadow-xs); margin-bottom: var(--space-6);">
+      <span class="badge badge-accent" style="font-size: 0.7rem; padding: 1px 6px;">NEW</span>
+      <span style="font-size: 0.82rem; color: var(--color-text-secondary); font-weight: 500;">
+        Judicial AI Assistant &bull; Offline Deterministic + Live Gemini 1.5
+      </span>
+      <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: var(--color-text-muted);"></i>
+    </div>
+
+    <!-- Main Headline with Gradient Keyphrase -->
+    <h1 style="font-size: 3.4rem; font-weight: 800; line-height: 1.12; letter-spacing: -0.035em; margin-bottom: var(--space-5);">
+      Digital Court Administration, <br>
+      Engineered with <span class="hero-gradient-text">Precision & Integrity</span>.
+    </h1>
+
+    <p style="font-size: 1.15rem; color: var(--color-text-secondary); max-width: 680px; margin: 0 auto var(--space-8); line-height: 1.6;">
+      NyayaDesk accelerates the Bench, Bar & Citizens with instant electronic filing, conflict-free cause lists, executive gazette scrutiny, and cryptographic SHA-256 digital orders.
+    </p>
+
+    <!-- Hero CTAs -->
+    <div style="display: flex; justify-content: center; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-12);">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-accent btn-lg" style="box-shadow: 0 4px 16px rgba(201, 162, 75, 0.35);">
+        <i data-lucide="arrow-right"></i> Apply for Bench Access
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-lg">
+        <i data-lucide="shield-check"></i> Sign In to Portal
+      </a>
+      <a href="{{ url_for('main.demo_guide') }}" class="btn btn-ghost btn-lg">
+        <i data-lucide="book-open"></i> Demo Guide & 1-Click Roles
+      </a>
+    </div>
+
+    <!-- FLOATING PRODUCT MOCKUP (Pure HTML/CSS) -->
+    <div class="product-mockup fade-in" style="max-width: 940px; margin: 0 auto; text-align: left;">
+      <div class="mockup-topbar">
+        <span class="mockup-dot mockup-dot-red"></span>
+        <span class="mockup-dot mockup-dot-yellow"></span>
+        <span class="mockup-dot mockup-dot-green"></span>
+        <div style="margin: 0 auto; font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-text-muted); background: var(--color-surface); padding: 2px 14px; border-radius: var(--radius-full); border: 1px solid var(--color-border);">
+          nyayadesk.gov.in &bull; bench-console
+        </div>
+      </div>
+
+      <div style="padding: var(--space-6); background: var(--color-bg);">
+        <!-- Mockup Metric Cards -->
+        <div class="grid grid-cols-4" style="margin-bottom: var(--space-5);">
+          <div class="stat-card" style="padding: var(--space-3) var(--space-4);">
+            <div class="stat-title">Active Benches</div>
+            <div class="stat-value" style="font-size: 1.4rem;">14 Courts</div>
+            <div class="stat-trend positive" style="font-size: 0.7rem;">● DLHC & District</div>
+          </div>
+          <div class="stat-card" style="padding: var(--space-3) var(--space-4);">
+            <div class="stat-title">Listed Today</div>
+            <div class="stat-value" style="font-size: 1.4rem; color: var(--color-accent);">{{ stats.hearings_today or 12 }} Hearings</div>
+            <div class="stat-trend neutral" style="font-size: 0.7rem;">Daily Cause List</div>
+          </div>
+          <div class="stat-card" style="padding: var(--space-3) var(--space-4);">
+            <div class="stat-title">Scrutiny Queue</div>
+            <div class="stat-value" style="font-size: 1.4rem; color: var(--color-warning);">5 Pending</div>
+            <div class="stat-trend positive" style="font-size: 0.7rem;">94% Cleared</div>
+          </div>
+          <div class="stat-card" style="padding: var(--space-3) var(--space-4);">
+            <div class="stat-title">Signed Orders</div>
+            <div class="stat-value" style="font-size: 1.4rem; color: var(--color-success);">{{ stats.orders_count or 18 }} Issued</div>
+            <div class="stat-trend positive" style="font-size: 0.7rem;">SHA-256 Validated</div>
+          </div>
+        </div>
+
+        <!-- Mockup Split Panels: Mock Cause List + Live Case Query -->
+        <div class="grid grid-cols-12" style="gap: var(--space-4);">
+          <div class="col-span-8 card" style="padding: var(--space-4);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3);">
+              <strong style="font-size: 0.88rem;">Today's Division Bench Calling List</strong>
+              <span class="badge badge-danger pulse-dot">Courtroom 1 Live</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="padding: 8px 12px; border-radius: var(--radius-sm); background: var(--color-surface-subtle); border: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; color: var(--color-accent);">CIV/2026/00010 &bull; Item #1</div>
+                  <div style="font-size: 0.82rem; font-weight: 500;">Surya Enterprises vs. Global Tech Logistics</div>
+                </div>
+                <span class="badge badge-success">Concluded</span>
+              </div>
+              <div style="padding: 8px 12px; border-radius: var(--radius-sm); background: var(--color-surface-subtle); border: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; color: var(--color-accent);">BAIL/2026/00011 &bull; Item #2</div>
+                  <div style="font-size: 0.82rem; font-weight: 500;">Harmanpreet Singh vs. State (NCT of Delhi)</div>
+                </div>
+                <span class="badge badge-info">Calling Now</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-span-4 card" style="padding: var(--space-4); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600; color: var(--color-text-muted); margin-bottom: 4px;">Verified Seal</div>
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; word-break: break-all; color: var(--color-text-secondary); background: var(--color-surface-subtle); padding: 6px; border-radius: var(--radius-xs); border: 1px solid var(--color-border);">
+                SHA256: e3b0c44298fc1c14...
+              </div>
+            </div>
+            <div style="margin-top: var(--space-3);">
+              <span class="badge badge-accent" style="width: 100%; justify-content: center; padding: 6px 0;">
+                <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i> Tamper-Evident Verifiable
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TRUST STRIP -->
+<section style="border-bottom: 1px solid var(--color-border); background: var(--color-surface); padding: var(--space-6) 0;">
+  <div class="container" style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: var(--space-4); color: var(--color-text-muted); font-size: 0.85rem; font-weight: 500;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="building-2" style="width: 18px; height: 18px; color: var(--color-accent);"></i> National High Courts
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="landmark" style="width: 18px; height: 18px; color: var(--color-accent);"></i> District & Sessions Courts
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="scale" style="width: 18px; height: 18px; color: var(--color-accent);"></i> Commercial Arbitration Benches
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="users" style="width: 18px; height: 18px; color: var(--color-accent);"></i> Citizen Legal Aid Access
+    </div>
+  </div>
+</section>
+
+<!-- PUBLIC QUICK CASE LOOKUP CARD -->
+<section class="container" style="padding-top: var(--space-12); padding-bottom: var(--space-6);">
+  <div class="card" style="padding: var(--space-8); border: 1px solid var(--color-border-hover); box-shadow: var(--shadow-md); background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-subtle) 100%);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-4);">
+      <div>
+        <span class="badge badge-accent" style="margin-bottom: 6px;">PUBLIC ACCESS PORTAL</span>
+        <h3 class="heading-serif" style="font-size: 1.5rem;">Open Judicial Case Dossier Lookup</h3>
+        <p style="font-size: 0.88rem; color: var(--color-text-muted);">
+          Inspect real-time petition status, next hearing dates, and published certified orders without logging in.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: var(--space-2); min-width: 320px; flex: 1; max-width: 520px;">
+        <div class="search-input-wrapper">
+          <i data-lucide="search"></i>
+          <input type="text" id="public-case-input" class="form-control" placeholder="Enter Case No (e.g. CIV/2026/00010)...">
+        </div>
+        <button onclick="searchPublicCase()" class="btn btn-primary" style="flex-shrink: 0;">
+          Search Case
+        </button>
+      </div>
+    </div>
+
+    <!-- Result container -->
+    <div id="public-case-result" style="display: none; margin-top: var(--space-4);"></div>
+  </div>
+</section>
+
+<!-- 6 KEY CAPABILITIES (Feature Grid) -->
+<section class="container" style="padding-top: var(--space-10); padding-bottom: var(--space-12);">
+  <div style="text-align: center; max-width: 640px; margin: 0 auto var(--space-10);">
+    <span class="badge badge-primary" style="margin-bottom: 8px;">ENTERPRISE ARCHITECTURE</span>
+    <h2 style="font-size: 2.2rem; margin-bottom: var(--space-2);">Built for Complex Judicial Administration</h2>
+    <p style="font-size: 0.95rem; color: var(--color-text-muted);">
+      Every module is engineered for strict statutory compliance, speed, and cross-functional reliability.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-3" style="gap: var(--space-6);">
+    <!-- Feature 1 -->
+    <div class="card card-lift" style="padding: var(--space-6);">
+      <div class="stat-icon" style="color: var(--color-accent); background: rgba(201,162,75,0.1); margin-bottom: var(--space-4);">
+        <i data-lucide="calendar"></i>
+      </div>
+      <h4 style="margin-bottom: var(--space-2);">Intelligent Cause Lists</h4>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+        Automated daily cause list sequencing with live courtroom display boards and real-time adjournment telemetry.
+      </p>
+    </div>
+
+    <!-- Feature 2 -->
+    <div class="card card-lift" style="padding: var(--space-6);">
+      <div class="stat-icon" style="color: var(--color-success); background: var(--color-success-bg); margin-bottom: var(--space-4);">
+        <i data-lucide="shield-check"></i>
+      </div>
+      <h4 style="margin-bottom: var(--space-2);">Tamper-Evident SHA-256 Orders</h4>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+        Every judicial order carries an immutable SHA-256 digital signature hash and verification code for transparent third-party validation.
+      </p>
+    </div>
+
+    <!-- Feature 3 -->
+    <div class="card card-lift" style="padding: var(--space-6);">
+      <div class="stat-icon" style="color: var(--color-warning); background: var(--color-warning-bg); margin-bottom: var(--space-4);">
+        <i data-lucide="clock"></i>
+      </div>
+      <h4 style="margin-bottom: var(--space-2);">Conflict-Free Scheduling</h4>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+        30-minute automated collision inspection detecting overlapping judge allocations or courtroom double-bookings before dispatch.
+      </p>
+    </div>
+
+    <!-- Feature 4 -->
+    <div class="card card-lift" style="padding: var(--space-6);">
+      <div class="stat-icon" style="color: var(--color-info); background: var(--color-info-bg); margin-bottom: var(--space-4);">
+        <i data-lucide="file-text"></i>
+      </div>
+      <h4 style="margin-bottom: var(--space-2);">E-Filing & Scrutiny Queues</h4>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+        Structured petition intake with drag-and-drop pleadings, statutory defect marking, and automated advocate notifications.
+      </p>
+    </div>
+
+    <!-- Feature 5 -->
+    <div class="card card-lift" style="padding: var(--space-6);">
+      <div class="stat-icon" style="color: var(--color-accent); background: rgba(201,162,75,0.1); margin-bottom: var(--space-4);">
+        <i data-lucide="bell"></i>
+      </div>
+      <h4 style="margin-bottom: var(--space-2);">Automated Smart Reminders</h4>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+        APScheduler alerts dispatched at 7 days, 1 day, and 2 hours with 2-way attendance confirmation via SMS and WhatsApp.
+      </p>
+    </div>
+
+    <!-- Feature 6 -->
+    <div class="card card-lift" style="padding: var(--space-6);">
+      <div class="stat-icon" style="color: var(--color-primary); background: var(--color-surface-subtle); margin-bottom: var(--space-4);">
+        <i data-lucide="sparkles"></i>
+      </div>
+      <h4 style="margin-bottom: var(--space-2);">Responsible Judicial AI</h4>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+        Dual-mode assistance with Case Summaries, Order Drafting, Priority Scoring, and multilingual Citizen Chatbot with Coram safeguards.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS (3-Step Flow) -->
+<section style="background: var(--color-surface-subtle); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); padding: var(--space-12) 0;">
+  <div class="container">
+    <div style="text-align: center; max-width: 600px; margin: 0 auto var(--space-10);">
+      <span class="badge badge-accent" style="margin-bottom: 8px;">PROCEDURAL FLOW</span>
+      <h2 style="font-size: 2rem;">How NyayaDesk Operates</h2>
+      <p style="font-size: 0.9rem; color: var(--color-text-muted);">
+        A seamless transition from digital filing to certified judicial disposal.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-3" style="gap: var(--space-6);">
+      <div class="card" style="padding: var(--space-6); position: relative;">
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-accent); line-height: 1; margin-bottom: var(--space-3); font-family: var(--font-mono);">
+          01
+        </div>
+        <h4 style="margin-bottom: var(--space-2);">E-Filing & Scrutiny</h4>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+          Advocates or citizens file petitions online. The Registry inspects affidavits, marks procedural defects, and issues a registered CNR.
+        </p>
+      </div>
+
+      <div class="card" style="padding: var(--space-6); position: relative;">
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-accent); line-height: 1; margin-bottom: var(--space-3); font-family: var(--font-mono);">
+          02
+        </div>
+        <h4 style="margin-bottom: var(--space-2);">Bench Allocation & Hearings</h4>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+          The Registrar assigns matters to benches. Clerks conflict-check slots, daily cause lists publish live, and parties receive automated reminders.
+        </p>
+      </div>
+
+      <div class="card" style="padding: var(--space-6); position: relative;">
+        <div style="font-size: 2.2rem; font-weight: 800; color: var(--color-accent); line-height: 1; margin-bottom: var(--space-3); font-family: var(--font-mono);">
+          03
+        </div>
+        <h4 style="margin-bottom: var(--space-2);">Certified Orders & Execution</h4>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+          Presiding judges dictate interim orders or final judgments, affix SHA-256 seals, and publish certified decrees instantly to litigants.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROLE SHOWCASE (7 Workspaces) -->
+<section class="container" style="padding-top: var(--space-12); padding-bottom: var(--space-12);">
+  <div style="text-align: center; max-width: 600px; margin: 0 auto var(--space-8);">
+    <span class="badge badge-primary" style="margin-bottom: 8px;">TAILORED EXPERIENCES</span>
+    <h2 style="font-size: 2rem;">Workspaces Built for Every Role</h2>
+    <p style="font-size: 0.9rem; color: var(--color-text-muted);">
+      Strict Role-Based Access Control separates administrative, judicial, legal, and public duties.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-4" style="gap: var(--space-4);">
+    <div class="card card-lift" style="padding: var(--space-5);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">🏛️</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Government Admin</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">National judicial infrastructure, appointments approval, and court analytics.</p>
+      <a href="{{ url_for('auth.demo_switch', role='government') }}" class="btn btn-secondary btn-xs" style="width: 100%;">Enter Gov Portal</a>
+    </div>
+
+    <div class="card card-lift" style="padding: var(--space-5);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">📜</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Registrar General</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">E-filing scrutiny queue, defect management, and bench case allocations.</p>
+      <a href="{{ url_for('auth.demo_switch', role='registrar') }}" class="btn btn-secondary btn-xs" style="width: 100%;">Enter Registry</a>
+    </div>
+
+    <div class="card card-lift" style="padding: var(--space-5);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">⚖️</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Presiding Judge</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">Daily cause list, bench minutes, FullCalendar, and SHA-256 order signing.</p>
+      <a href="{{ url_for('auth.demo_switch', role='judge') }}" class="btn btn-secondary btn-xs" style="width: 100%;">Enter Chamber</a>
+    </div>
+
+    <div class="card card-lift" style="padding: var(--space-5);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">🖥️</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Court Master / Clerk</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">Multi-step registration wizard, conflict scheduler, and formal summons printing.</p>
+      <a href="{{ url_for('auth.demo_switch', role='clerk') }}" class="btn btn-secondary btn-xs" style="width: 100%;">Enter Clerk Console</a>
+    </div>
+
+    <div class="card card-lift" style="padding: var(--space-5);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">💼</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Advocate / Counsel</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">Electronic petition filing, client brief tracking, and legal fee invoicing ledger.</p>
+      <a href="{{ url_for('auth.demo_switch', role='lawyer') }}" class="btn btn-secondary btn-xs" style="width: 100%;">Enter Advocate Desk</a>
+    </div>
+
+    <div class="card card-lift" style="padding: var(--space-5);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">👤</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Citizen / Litigant</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">Visual 5-step progress stepper, countdown timers, and online fee payments.</p>
+      <a href="{{ url_for('auth.demo_switch', role='litigant') }}" class="btn btn-secondary btn-xs" style="width: 100%;">Enter Citizen Portal</a>
+    </div>
+
+    <div class="card card-lift" style="padding: var(--space-5);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">👮</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px;">Police Services</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">FIR charge-sheet submissions, remand hearings, and witness summons tracking.</p>
+      <a href="{{ url_for('auth.demo_switch', role='police') }}" class="btn btn-secondary btn-xs" style="width: 100%;">Enter Police Desk</a>
+    </div>
+
+    <div class="card card-lift" style="padding: var(--space-5); border-color: var(--color-accent); background: var(--color-surface-subtle);">
+      <div style="font-size: 1.5rem; margin-bottom: var(--space-2);">🧭</div>
+      <h4 style="font-size: 0.95rem; margin-bottom: 4px; color: var(--color-accent);">Interactive Demo Guide</h4>
+      <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">Instant 1-click role switcher and database reset utility for evaluations.</p>
+      <a href="{{ url_for('main.demo_guide') }}" class="btn btn-accent btn-xs" style="width: 100%;">Open Demo Guide</a>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ ACCORDION -->
+<section style="background: var(--color-surface-subtle); border-top: 1px solid var(--color-border); padding: var(--space-12) 0;">
+  <div class="container" style="max-width: 800px;">
+    <div style="text-align: center; margin-bottom: var(--space-8);">
+      <span class="badge badge-accent" style="margin-bottom: 8px;">FREQUENTLY ASKED QUESTIONS</span>
+      <h2 style="font-size: 2rem;">Answers for Legal Administrators & Citizens</h2>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleFaq(this)">
+        <span>How does executive approval for Judicial Officers operate?</span>
+        <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+      </div>
+      <div class="accordion-body" style="display: none;">
+        Judge and Registrar registrations automatically enter <code>pending_gov</code> status. The Government Administration reviews submitted service credentials, employee IDs, and Bar records before granting active judicial bench access.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleFaq(this)">
+        <span>Are digital orders issued on NyayaDesk legally tamper-evident?</span>
+        <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+      </div>
+      <div class="accordion-body" style="display: none;">
+        Yes. Each order and judgment generates a cryptographic SHA-256 hash linking the order content, issuing judge ID, and timestamp, alongside a verification code (e.g. <code>NYAYA-ORD-0010-2026</code>) verifiable at <code>/orders/verify/&lt;code&gt;</code>.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleFaq(this)">
+        <span>How does the hearing collision detection engine work?</span>
+        <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+      </div>
+      <div class="accordion-body" style="display: none;">
+        When scheduling a hearing, the system inspects whether the designated judge or courtroom is booked within 30 minutes. If a collision is found, the scheduler rejects the slot with HTTP 409 and presents AI-recommended vacant alternative slots.
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleFaq(this)">
+        <span>Does NyayaDesk require internet or cloud API keys to operate?</span>
+        <i data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+      </div>
+      <div class="accordion-body" style="display: none;">
+        No. NyayaDesk features a dual-mode engine: it defaults to an offline rule-based legal synthesis engine that operates seamlessly without external API keys or internet access. When a <code>GEMINI_API_KEY</code> is configured, it transitions to live Gemini 1.5.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CALL TO ACTION BAND -->
+<section style="background: linear-gradient(135deg, var(--brand-900) 0%, #152C4E 100%); color: #FFFFFF; padding: var(--space-12) 0; text-align: center; border-top: 1px solid var(--color-border);">
+  <div class="container" style="max-width: 680px;">
+    <h2 style="font-size: 2.2rem; color: #FFFFFF; margin-bottom: var(--space-3);">
+      Transform Your Judicial Administration Today
+    </h2>
+    <p style="font-size: 1rem; color: rgba(255, 255, 255, 0.8); margin-bottom: var(--space-6);">
+      Experience paperless electronic filing, automated cause lists, and verifiable judicial orders across all courts.
+    </p>
+    <div style="display: flex; justify-content: center; gap: var(--space-4); flex-wrap: wrap;">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-accent btn-lg" style="box-shadow: 0 4px 16px rgba(201, 162, 75, 0.35);">
+        Apply for Bench Access
+      </a>
+      <a href="{{ url_for('main.demo_guide') }}" class="btn btn-outline btn-lg" style="color: #FFFFFF; border-color: rgba(255, 255, 255, 0.3);">
+        Explore Demo Accounts
+      </a>
+    </div>
+  </div>
+</section>
+
+<script>
+function toggleFaq(header) {
+  const body = header.nextElementSibling;
+  const isHidden = body.style.display === 'none' || !body.style.display;
+  body.style.display = isHidden ? 'block' : 'none';
+  const icon = header.querySelector('i, svg');
+  if (icon) {
+    icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    icon.style.transition = 'transform 0.2s ease';
+  }
+}
+
+async function searchPublicCase() {
+  const query = document.getElementById('public-case-input').value.trim();
+  const resContainer = document.getElementById('public-case-result');
+  if (!query) return;
+
+  resContainer.style.display = 'block';
+  resContainer.innerHTML = '<div style="color: var(--color-text-muted); font-size: 0.85rem; padding: 10px;">Checking judicial registry records...</div>';
+
+  try {
+    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    if (res.ok) {
+      const data = await res.json();
+      const cases = data.cases || [];
+      if (cases.length === 0) {
+        resContainer.innerHTML = '<div class="alert alert-danger" style="margin: 0;">No matching registered case found in active court dockets.</div>';
+        return;
+      }
+      const c = cases[0];
+      resContainer.innerHTML = `
+        <div class="card" style="padding: var(--space-4); border: 1px solid var(--color-accent); text-align: left;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-family: var(--font-mono); font-weight: 700; color: var(--color-accent); font-size: 1rem;">${c.case_number}</div>
+            <span class="badge badge-info">${c.status}</span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 4px;">${c.title}</div>
+          <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 8px;">${c.court} &bull; Type: <strong>${c.case_type}</strong></div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; border-top: 1px solid var(--color-border); padding-top: 6px;">
+            <span>Next Hearing: <strong style="color: var(--color-success);">${c.next_hearing_date || 'Listed'}</strong></span>
+            <span style="color: var(--color-text-muted);">CNR Verified</span>
+          </div>
+        </div>
+      `;
+    }
+  } catch (err) {
+    resContainer.innerHTML = '<div class="alert alert-danger" style="margin: 0;">Lookup query failed. Please verify case number.</div>';
+  }
+}
+</script>
+{% endblock %}

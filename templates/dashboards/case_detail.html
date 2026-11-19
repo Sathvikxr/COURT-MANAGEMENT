@@ -1,0 +1,345 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}{{ case.case_number }} - Case Dossier & Judicial Copilot - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: var(--space-5); padding-bottom: var(--space-8);">
+  <!-- Top Navigation & Status Header -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-5); flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+        <span class="badge badge-primary">{{ case.case_type }}</span>
+        <span class="badge badge-info">{{ case.status }}</span>
+        <span class="badge {{ 'badge-danger' if case.priority == 'High' else 'badge-outline' }}">Priority: {{ case.priority }}</span>
+      </div>
+      <h2 style="font-family: var(--font-serif); font-size: 1.6rem; margin: 0 0 4px 0;">
+        {{ case.case_number }}
+      </h2>
+      <div style="font-size: 1.05rem; color: var(--color-text-secondary); font-weight: 500;">
+        {{ case.title }}
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <a href="javascript:history.back()" class="btn btn-outline btn-sm">
+        &larr; Back
+      </a>
+      <span class="badge badge-accent" style="font-size: 0.72rem; padding: 4px 8px;">
+        <i data-lucide="shield-check" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+        RBAC Verified Access
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Grid: Case Dossier (Left) + Judge Copilot Sidebar (Right) -->
+  <div class="grid grid-cols-12" style="gap: var(--space-5);">
+    
+    <!-- LEFT COLUMN: Case File, Documents & RAG Assistant (8 cols) -->
+    <div style="grid-column: span 8 / span 8;">
+      
+      <!-- 1. Case Factual Summary & Metadata -->
+      <div class="card" style="padding: var(--space-5); margin-bottom: var(--space-5);">
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: var(--space-3); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="file-text" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+          Petition Pleadings & Factual Matrix
+        </h3>
+        <p style="font-size: 0.92rem; line-height: 1.6; color: var(--color-text); white-space: pre-wrap; margin-bottom: var(--space-4);">{{ case.description or 'No factual description on record.' }}</p>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.8rem; color: var(--color-text-muted); border-top: 1px solid var(--color-border); padding-top: 8px;">
+          <span><strong>Filed On:</strong> {{ case.filed_on.strftime('%d-%b-%Y') if case.filed_on else 'N/A' }}</span>
+          <span><strong>Court:</strong> {{ case.court.name if case.court else 'Judicial District' }}</span>
+          <span><strong>Bench:</strong> {{ case.judge.full_name if case.judge else 'Unassigned' }}</span>
+        </div>
+      </div>
+
+      <!-- 2. Litigants & Legal Counsel -->
+      <div class="card" style="padding: var(--space-5); margin-bottom: var(--space-5);">
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: var(--space-3); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="users" style="width: 16px; height: 16px; color: var(--color-accent);"></i>
+          Litigants & Designated Counsel
+        </h3>
+        <table class="table" style="font-size: 0.85rem;">
+          <thead>
+            <tr>
+              <th>Party Name</th>
+              <th>Capacity</th>
+              <th>Advocate / Legal Counsel</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in case.parties %}
+              <tr>
+                <td><strong>{{ p.name }}</strong></td>
+                <td><span class="badge badge-outline">{{ p.party_type }}</span></td>
+                <td>{{ p.advocate.full_name if p.advocate else 'Party-in-Person' }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="3" style="text-align:center; color:var(--color-text-muted);">No parties listed.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3. FEATURE 2: RAG "ASK THE CASE FILE" -->
+      <div class="card" style="padding: var(--space-5); border: 2px solid rgba(201, 162, 75, 0.4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(201, 162, 75, 0.2); display: flex; align-items: center; justify-content: center; color: var(--color-accent);">
+              <i data-lucide="sparkles" style="width: 15px; height: 15px;"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">Ask the Case File (Grounded RAG)</h3>
+              <div style="font-size: 0.72rem; color: var(--color-text-muted);">Strictly grounded in case documents, orders, and hearings. Never hallucinates outside this file.</div>
+            </div>
+          </div>
+          <span class="badge badge-outline" style="font-size: 0.65rem;">⚖️ AI-generated, review before use</span>
+        </div>
+
+        <!-- RAG Prompt Input -->
+        <div style="margin: var(--space-3) 0;">
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="rag-question" class="form-control" style="font-size: 0.88rem;" placeholder="Ask question e.g. 'What specific relief is sought in prayer (b)?' or 'What were last hearing directions?'" onkeydown="if(event.key==='Enter') askCaseFile()">
+            <button class="btn btn-primary" onclick="askCaseFile()" style="display: inline-flex; align-items: center; gap: 6px; padding: 0 16px;">
+              <i data-lucide="search" style="width: 15px; height: 15px;"></i>
+              <span>Ask File</span>
+            </button>
+          </div>
+          <!-- Quick Suggestion Chips for RAG -->
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px;">
+            <span style="font-size: 0.7rem; color: var(--color-text-muted);">Quick Prompts:</span>
+            <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setRagPrompt('What is the primary relief sought by petitioner?')">Primary relief?</button>
+            <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setRagPrompt('What was the reason for the last adjournment?')">Last adjournment reason?</button>
+            <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setRagPrompt('Are any counter-affidavits pending on record?')">Pending affidavits?</button>
+          </div>
+        </div>
+
+        <!-- RAG Loading Skeleton -->
+        <div id="rag-loading" style="display: none; padding: 12px 0;">
+          <div style="font-size: 0.8rem; color: var(--color-accent); font-weight: 600; margin-bottom: 6px;">
+            <i data-lucide="loader" class="spin" style="width: 14px; height: 14px; vertical-align: middle;"></i> Scanning indexed case corpus and orders...
+          </div>
+          <div class="ai-shimmer" style="height: 14px; width: 75%; margin-bottom: 4px;"></div>
+          <div class="ai-shimmer" style="height: 14px; width: 88%; margin-bottom: 4px;"></div>
+          <div class="ai-shimmer" style="height: 14px; width: 50%;"></div>
+        </div>
+
+        <!-- RAG Answer Display Box -->
+        <div id="rag-response-box" style="display: none; background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px; margin-top: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+            <strong style="font-size: 0.85rem; color: var(--color-accent);">Answer from Case Corpus:</strong>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-outline btn-sm" onclick="copyRagAnswer()" style="padding: 2px 6px; font-size: 0.72rem;">
+                <i data-lucide="copy" style="width: 12px; height: 12px;"></i> Copy
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="askCaseFile()" style="padding: 2px 6px; font-size: 0.72rem;">
+                <i data-lucide="refresh-cw" style="width: 12px; height: 12px;"></i> Regenerate
+              </button>
+            </div>
+          </div>
+          <div id="rag-answer-text" style="font-size: 0.88rem; line-height: 1.5; color: var(--color-text); margin-bottom: 8px;"></div>
+          
+          <!-- Exact Document Citations List -->
+          <div id="rag-citations-area" style="border-top: 1px dashed var(--color-border); padding-top: 6px; margin-top: 6px;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); margin-bottom: 4px;">Exact Document Citations:</div>
+            <ul id="rag-citations-list" style="margin: 0; padding-left: 18px; font-size: 0.76rem; color: var(--color-text-secondary);"></ul>
+          </div>
+
+          <!-- Evaluation Thumbs -->
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.72rem; color: var(--color-text-muted);">
+            <span>Accurate?</span>
+            <button onclick="rateAIFeature('case_rag', 'helpful')" style="background:none; border:none; cursor:pointer;">👍</button>
+            <button onclick="rateAIFeature('case_rag', 'wrong')" style="background:none; border:none; cursor:pointer;">👎</button>
+            <span id="rag-feedback-msg" style="color: var(--color-success); font-size: 0.7rem;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: FEATURE 9: JUDGE COPILOT SIDEBAR (4 cols) -->
+    <div style="grid-column: span 4 / span 4;">
+      <div class="card" style="padding: var(--space-5); position: sticky; top: 20px; border-top: 3px solid var(--color-primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="briefcase" style="width: 18px; height: 18px; color: var(--color-primary);"></i>
+            <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">Judge Copilot</h3>
+          </div>
+          <span class="badge badge-accent" style="font-size: 0.65rem;">Bench Tools</span>
+        </div>
+
+        <p style="font-size: 0.78rem; color: var(--color-text-muted); margin-bottom: var(--space-4);">
+          Autonomous judicial assistance tools verifying trial record completeness and automating standard cause list orders.
+        </p>
+
+        <!-- Quick Action Buttons -->
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-5);">
+          <button class="btn btn-outline" style="justify-content: flex-start; font-size: 0.82rem; padding: 8px 12px;" onclick="runCopilotAction('summarize_3_bullets')">
+            <i data-lucide="list-ordered" style="width: 15px; height: 15px; margin-right: 6px; color: var(--color-primary);"></i>
+            Summarize Case in 3 Bullets
+          </button>
+
+          <button class="btn btn-outline" style="justify-content: flex-start; font-size: 0.82rem; padding: 8px 12px;" onclick="openAdjournmentModal()">
+            <i data-lucide="file-edit" style="width: 15px; height: 15px; margin-right: 6px; color: var(--color-accent);"></i>
+            Draft Adjournment Order
+          </button>
+
+          <button class="btn btn-outline" style="justify-content: flex-start; font-size: 0.82rem; padding: 8px 12px;" onclick="openConflictsCheckModal()">
+            <i data-lucide="calendar" style="width: 15px; height: 15px; margin-right: 6px; color: #10b981;"></i>
+            Check Hearing Conflicts
+          </button>
+
+          <button class="btn btn-outline" style="justify-content: flex-start; font-size: 0.82rem; padding: 8px 12px;" onclick="runCopilotAction('flag_missing_evidence')">
+            <i data-lucide="alert-octagon" style="width: 15px; height: 15px; margin-right: 6px; color: #ef4444;"></i>
+            Flag Missing Evidence / Posture
+          </button>
+        </div>
+
+        <!-- Copilot Output Panel -->
+        <div id="copilot-loading" style="display: none; text-align: center; padding: 12px 0;">
+          <i data-lucide="loader" class="spin" style="width: 18px; height: 18px; color: var(--color-accent); margin-bottom: 6px;"></i>
+          <div style="font-size: 0.75rem; color: var(--color-text-muted);">Executing judicial tool...</div>
+        </div>
+
+        <div id="copilot-output" style="display: none; background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 10px; font-size: 0.82rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong id="copilot-output-title" style="color: var(--color-primary);">Copilot Result</strong>
+            <button onclick="copyCopilotResult()" class="btn btn-outline btn-sm" style="padding: 1px 4px; font-size: 0.65rem;">Copy</button>
+          </div>
+          <div id="copilot-output-content" style="line-height: 1.45; white-space: pre-wrap; margin-bottom: 8px;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); padding-top: 6px; font-size: 0.68rem; color: var(--color-text-muted);">
+            <span>⚖️ AI-generated, review before use</span>
+            <div style="display: flex; gap: 4px;">
+              <button onclick="rateAIFeature('judge_copilot', 'helpful')" style="background:none; border:none; cursor:pointer;">👍</button>
+              <button onclick="rateAIFeature('judge_copilot', 'wrong')" style="background:none; border:none; cursor:pointer;">👎</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CASE_ID = {{ case.id }};
+
+function setRagPrompt(text) {
+  document.getElementById('rag-question').value = text;
+  askCaseFile();
+}
+
+async function askCaseFile() {
+  const q = document.getElementById('rag-question').value.trim();
+  if (!q) return;
+
+  const loading = document.getElementById('rag-loading');
+  const box = document.getElementById('rag-response-box');
+  const ansText = document.getElementById('rag-answer-text');
+  const citList = document.getElementById('rag-citations-list');
+
+  loading.style.display = 'block';
+  box.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/ai/cases/${CASE_ID}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    box.style.display = 'block';
+
+    if (data.answer) {
+      ansText.innerHTML = data.answer.replace(/\n/g, '<br>');
+      citList.innerHTML = (data.citations || []).map(c => `<li>${c}</li>`).join('') || '<li>General Case Record</li>';
+    } else {
+      ansText.textContent = data.error || 'Query was refused or unauthorized.';
+      citList.innerHTML = '';
+    }
+  } catch (e) {
+    loading.style.display = 'none';
+    box.style.display = 'block';
+    ansText.textContent = 'Communication error: ' + e.message;
+  }
+}
+
+function copyRagAnswer() {
+  const t = document.getElementById('rag-answer-text').innerText;
+  navigator.clipboard.writeText(t);
+  alert('Case corpus answer copied to clipboard.');
+}
+
+async function runCopilotAction(action, payload = {}) {
+  const loading = document.getElementById('copilot-loading');
+  const outBox = document.getElementById('copilot-output');
+  const outTitle = document.getElementById('copilot-output-title');
+  const outContent = document.getElementById('copilot-output-content');
+
+  loading.style.display = 'block';
+  outBox.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/ai/cases/${CASE_ID}/copilot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: action, ...payload })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    outBox.style.display = 'block';
+
+    if (action === 'summarize_3_bullets') {
+      outTitle.textContent = '3-Bullet Judicial Summary';
+      outContent.innerHTML = (data.bullets || []).join('\n\n');
+    } else if (action === 'draft_adjournment_order') {
+      outTitle.textContent = 'Draft Adjournment Order';
+      outContent.textContent = data.draft_text || 'Draft generated.';
+    } else if (action === 'find_conflicts') {
+      outTitle.textContent = `Hearing Conflicts Check (${data.proposed_date})`;
+      outContent.innerHTML = `<strong>${data.recommendation}</strong>\n\nTotal listed on date: ${data.total_scheduled}`;
+    } else if (action === 'flag_missing_evidence') {
+      outTitle.textContent = 'Evidence & Filings Checklist';
+      let html = `<strong>${data.advisory}</strong>\n\n`;
+      (data.checklist || []).forEach(item => {
+        const color = item.status === 'VERIFIED' ? 'color: var(--color-success);' : 'color: var(--color-danger); font-weight:700;';
+        html += `<div style="${color}">[${item.status}] ${item.requirement}</div>`;
+      });
+      outContent.innerHTML = html;
+    }
+  } catch (e) {
+    loading.style.display = 'none';
+    outBox.style.display = 'block';
+    outContent.textContent = 'Error executing copilot tool: ' + e.message;
+  }
+}
+
+function openAdjournmentModal() {
+  const reason = prompt("Enter reason for adjournment (e.g. 'Non-appearance of respondent counsel'):", "Absence of witness due to medical exigency");
+  if (!reason) return;
+  const nextDate = prompt("Enter proposed next hearing date (YYYY-MM-DD):", "2026-12-15");
+  if (!nextDate) return;
+  runCopilotAction('draft_adjournment_order', { reason: reason, next_date: nextDate });
+}
+
+function openConflictsCheckModal() {
+  const proposedDate = prompt("Enter proposed date to check docket conflicts (YYYY-MM-DD):", "2026-12-15");
+  if (!proposedDate) return;
+  runCopilotAction('find_conflicts', { proposed_date: proposedDate });
+}
+
+function copyCopilotResult() {
+  const t = document.getElementById('copilot-output-content').innerText;
+  navigator.clipboard.writeText(t);
+  alert('Copilot content copied to clipboard.');
+}
+
+async function rateAIFeature(feature, rating) {
+  try {
+    await fetch('/api/ai/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feature: feature, rating: rating })
+    });
+    const el = document.getElementById('rag-feedback-msg');
+    if (el) el.textContent = 'Saved!';
+  } catch(e) {}
+}
+</script>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}AI Evaluation & Quality Assurance - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="dashboard-page-header">
+  <div class="dashboard-title-group">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2);">
+      <span class="pulse-dot"></span> Judicial AI Governance &bull; Quality Assurance Mode
+    </div>
+    <h2>AI Output Evaluation & Human Feedback</h2>
+    <p>Review judicial AI model responses, monitor accuracy and safety ratings, and track satisfaction metrics across all court features.</p>
+  </div>
+
+  <div class="dashboard-actions-group">
+    <span class="badge badge-accent" style="font-size: 0.75rem; padding: 6px 12px;">
+      <i data-lucide="check-circle" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+      Human-in-the-Loop Oversight
+    </span>
+  </div>
+</div>
+
+<!-- 1. KPI SUMMARY CARDS -->
+<div class="grid grid-cols-4" style="gap: var(--space-4); margin-bottom: var(--space-6);">
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Satisfaction Rate</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-success);">
+        <i data-lucide="thumbs-up" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" style="color: var(--color-success);">{{ summary.satisfaction_rate }}%</div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      {{ summary.helpful_count }} Helpful / {{ summary.total_evaluations }} Total
+    </div>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Total Evaluated Outputs</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-accent);">
+        <i data-lucide="activity" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ summary.total_evaluations }}</div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      Across all 11 AI capabilities
+    </div>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Inaccurate / Wrong Flags</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-warning);">
+        <i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" style="color: var(--color-warning);">{{ summary.wrong_count }}</div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      Marked for prompt refinement
+    </div>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Unsafe / Boundary Alerts</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-danger);">
+        <i data-lucide="shield-alert" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value" style="color: {{ 'var(--color-danger)' if summary.unsafe_count > 0 else 'var(--color-text)' }};">
+        {{ summary.unsafe_count }}
+      </div>
+    </div>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 4px;">
+      Guardrail triggers or injection attempts
+    </div>
+  </div>
+</div>
+
+<!-- 2. SATISFACTION CHART & FEATURE METRICS -->
+<div class="grid grid-cols-2" style="gap: var(--space-5); margin-bottom: var(--space-6);">
+  <div class="card" style="padding: var(--space-5);">
+    <h3 style="font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="bar-chart-2" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+      Satisfaction Rate (%) by AI Feature
+    </h3>
+    <div style="position: relative; height: 260px;">
+      <canvas id="satisfactionChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card" style="padding: var(--space-5);">
+    <h3 style="font-size: 1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="layers" style="width: 16px; height: 16px; color: var(--color-accent);"></i>
+      Feature Reliability Breakdown
+    </h3>
+    <div style="overflow-x: auto; max-height: 260px;">
+      <table class="table" style="font-size: 0.8rem; width: 100%;">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Total</th>
+            <th>Helpful</th>
+            <th>Wrong</th>
+            <th>Unsafe</th>
+            <th>Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for feat, m in summary.feature_metrics.items() %}
+          <tr>
+            <td style="font-weight: 600; font-family: var(--font-mono);">{{ feat }}</td>
+            <td>{{ m.total }}</td>
+            <td style="color: var(--color-success);">{{ m.helpful }}</td>
+            <td style="color: var(--color-warning);">{{ m.wrong }}</td>
+            <td style="color: var(--color-danger);">{{ m.unsafe }}</td>
+            <td>
+              <span class="badge {{ 'badge-success' if m.satisfaction_pct >= 80 else ('badge-accent' if m.satisfaction_pct >= 50 else 'badge-danger') }}" style="font-size: 0.7rem;">
+                {{ m.satisfaction_pct }}%
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 3. RECENT AUDITED EVALUATIONS TABLE -->
+<div class="card" style="padding: var(--space-5);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4);">
+    <h3 style="font-size: 1rem; display: flex; align-items: center; gap: 8px; margin: 0;">
+      <i data-lucide="clipboard-list" style="width: 16px; height: 16px; color: var(--color-primary);"></i>
+      Recent Audited Model Evaluations
+    </h3>
+    <span class="badge badge-outline" style="font-size: 0.68rem;">⚖️ AI-generated, review before use</span>
+  </div>
+
+  <div style="overflow-x: auto;">
+    <table class="table" style="font-size: 0.82rem; width: 100%;">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Feature</th>
+          <th>Rating</th>
+          <th>Feedback / Comments</th>
+          <th>Prompt / Query</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in summary.recent_evaluations %}
+        <tr>
+          <td style="white-space: nowrap; color: var(--color-text-muted);">{{ item.created_at }}</td>
+          <td>
+            <strong>{{ item.user_name }}</strong>
+            <div style="font-size: 0.7rem; color: var(--color-text-muted);">{{ item.user_role }}</div>
+          </td>
+          <td><span class="badge badge-outline" style="font-size: 0.7rem;">{{ item.feature }}</span></td>
+          <td>
+            {% if item.rating == 'helpful' %}
+            <span class="badge badge-success" style="font-size: 0.7rem;">Helpful 👍</span>
+            {% elif item.rating == 'wrong' %}
+            <span class="badge badge-accent" style="font-size: 0.7rem;">Wrong / Inaccurate 👎</span>
+            {% else %}
+            <span class="badge badge-danger" style="font-size: 0.7rem;">Unsafe Alert ⚠️</span>
+            {% endif %}
+          </td>
+          <td>{{ item.feedback }}</td>
+          <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ item.prompt_snippet }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ctx = document.getElementById('satisfactionChart');
+  if (!ctx) return;
+
+  const featureLabels = {{ summary.feature_metrics.keys() | list | tojson }};
+  const satisfactionRates = [
+    {% for f in summary.feature_metrics.keys() %}
+    {{ summary.feature_metrics[f].satisfaction_pct }},
+    {% endfor %}
+  ];
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: featureLabels,
+      datasets: [{
+        label: 'Satisfaction Rate (%)',
+        data: satisfactionRates,
+        backgroundColor: satisfactionRates.map(v => v >= 80 ? '#10b981' : (v >= 50 ? '#f59e0b' : '#ef4444')),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: function(v) { return v + '%'; }
+          }
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}Design System Preview - NyayaDesk (Linear / Stripe Style){% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: var(--space-8); padding-bottom: var(--space-16);">
+
+  <!-- PAGE HEADER -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-8); padding-bottom: var(--space-6); border-bottom: 1px solid var(--color-border);">
+    <div>
+      <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+        <span class="badge badge-accent">DESIGN TOKENS &bull; v2.0</span>
+        <span class="badge badge-neutral">INTERNAL PREVIEW ONLY</span>
+      </div>
+      <h1 class="heading-serif" style="font-size: 2.2rem; margin-bottom: var(--space-2);">Linear / Stripe Design System</h1>
+      <p style="font-size: 0.95rem; color: var(--color-text-muted); max-width: 640px;">
+        Complete component inventory of the NyayaDesk Judicial SaaS design system. Crafted with hairline 1px borders, layered diffuse shadows, tabular numbers, and equal-quality light & dark themes.
+      </p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: var(--space-3);">
+      <button class="btn btn-secondary" onclick="toggleTheme()">
+        <i data-lucide="sun-moon" style="width: 16px; height: 16px;"></i> Toggle Theme
+      </button>
+      <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+        <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i> Back to Portal
+      </a>
+    </div>
+  </div>
+
+  <!-- 1. COLOR & SEMANTIC SCALE -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">1. Color & Semantic Scale</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Neutral slate scale, brand navy, surgical gold accent, and soft translucent semantic tints.</p>
+    </div>
+
+    <div class="grid grid-cols-4">
+      <div class="card" style="padding: var(--space-4);">
+        <div style="height: 48px; border-radius: var(--radius-sm); background: var(--brand-900); margin-bottom: var(--space-3); border: 1px solid rgba(255,255,255,0.1);"></div>
+        <div style="font-weight: 600; font-size: 0.85rem;">Brand Navy</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: var(--font-mono);">#0B1F3A &bull; --brand-900</div>
+      </div>
+
+      <div class="card" style="padding: var(--space-4);">
+        <div style="height: 48px; border-radius: var(--radius-sm); background: var(--gold-500); margin-bottom: var(--space-3); border: 1px solid var(--gold-600);"></div>
+        <div style="font-weight: 600; font-size: 0.85rem;">Gold Accent</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: var(--font-mono);">#C9A24B &bull; --gold-500</div>
+      </div>
+
+      <div class="card" style="padding: var(--space-4);">
+        <div style="height: 48px; border-radius: var(--radius-sm); background: var(--color-surface); margin-bottom: var(--space-3); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);"></div>
+        <div style="font-weight: 600; font-size: 0.85rem;">Surface Canvas</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: var(--font-mono);">--color-surface</div>
+      </div>
+
+      <div class="card" style="padding: var(--space-4);">
+        <div style="height: 48px; border-radius: var(--radius-sm); background: var(--color-surface-subtle); margin-bottom: var(--space-3); border: 1px solid var(--color-border);"></div>
+        <div style="font-weight: 600; font-size: 0.85rem;">Subtle Surface</div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); font-family: var(--font-mono);">--color-surface-subtle</div>
+      </div>
+    </div>
+
+    <!-- Semantic Tints -->
+    <div class="grid grid-cols-4" style="margin-top: var(--space-4);">
+      <div style="padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-success-bg); border: 1px solid var(--color-success-border); color: var(--color-success);">
+        <div style="font-weight: 600; font-size: 0.85rem;">Success Tint</div>
+        <div style="font-size: 0.72rem; opacity: 0.85;">Adjourned / Disposed / Valid</div>
+      </div>
+      <div style="padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-warning-bg); border: 1px solid var(--color-warning-border); color: var(--color-warning);">
+        <div style="font-weight: 600; font-size: 0.85rem;">Warning Tint</div>
+        <div style="font-size: 0.72rem; opacity: 0.85;">Pending / Scrutiny / Review</div>
+      </div>
+      <div style="padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-danger-bg); border: 1px solid var(--color-danger-border); color: var(--color-danger);">
+        <div style="font-weight: 600; font-size: 0.85rem;">Danger Tint</div>
+        <div style="font-size: 0.72rem; opacity: 0.85;">Defective / Urgent / Rejected</div>
+      </div>
+      <div style="padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-info-bg); border: 1px solid var(--color-info-border); color: var(--color-info);">
+        <div style="font-weight: 600; font-size: 0.85rem;">Info Tint</div>
+        <div style="font-size: 0.72rem; opacity: 0.85;">Registered / Hearing / Listed</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. TYPOGRAPHY HIERARCHY -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">2. Typography & Letter Spacing</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Inter font scale with tight tracking on headings; Playfair Display reserved for authoritative judicial titles.</p>
+    </div>
+
+    <div class="card" style="padding: var(--space-6);">
+      <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-2);">
+          <h1 style="margin: 0;">Heading 1 (32px - 2.25rem)</h1>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);">tracking: -0.03em</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-2);">
+          <h2 style="margin: 0;">Heading 2 (24px - 1.75rem)</h2>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);">tracking: -0.025em</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-2);">
+          <h3 style="margin: 0;">Heading 3 (20px - 1.35rem)</h3>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);">tracking: -0.02em</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-2);">
+          <h4 style="margin: 0;">Heading 4 (16px - 1.15rem)</h4>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);">tracking: -0.015em</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-2);">
+          <h2 class="heading-serif" style="margin: 0; color: var(--color-accent);">Playfair Display Wordmark (Judicial Chamber)</h2>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);">Serif Accent</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <div class="tabular-nums" style="font-family: var(--font-mono); font-size: 1.1rem; color: var(--color-text);">
+            Tabular Digits: ₹ 1,450,200.00 &bull; Case No: CIV/2026/00045 &bull; Time: 10:30:45 AM
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted);">tnum feature</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. BUTTONS & ACTIONS -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">3. Precision Buttons (Linear / Stripe Style)</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Crisp heights, hairline borders, subtle top inset highlights, and micro-press scale.</p>
+    </div>
+
+    <div class="card" style="padding: var(--space-6);">
+      <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; margin-bottom: var(--space-5);">
+        <button class="btn btn-primary">Primary Button</button>
+        <button class="btn btn-secondary">Secondary Button</button>
+        <button class="btn btn-accent"><i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> Accent Action</button>
+        <button class="btn btn-outline">Outline Action</button>
+        <button class="btn btn-ghost">Ghost Button</button>
+        <button class="btn btn-danger">Danger Action</button>
+        <button class="btn btn-success">Success Action</button>
+        <button class="btn btn-primary is-loading">Loading</button>
+        <button class="btn btn-icon" title="Settings icon button"><i data-lucide="settings" style="width: 16px; height: 16px;"></i></button>
+      </div>
+
+      <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+        <span style="font-size: 0.75rem; color: var(--color-text-muted); font-weight: 600; text-transform: uppercase;">Sizes:</span>
+        <button class="btn btn-secondary btn-xs">Extra Small (26px)</button>
+        <button class="btn btn-secondary btn-sm">Small (30px)</button>
+        <button class="btn btn-secondary btn-md">Medium (36px)</button>
+        <button class="btn btn-secondary btn-lg">Large (42px)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. FORM INPUTS & SWITCHES -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">4. Form Inputs, Selects & Switches</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Inputs with crisp focus rings, segmented controls, and toggle switches.</p>
+    </div>
+
+    <div class="card" style="padding: var(--space-6);">
+      <div class="grid grid-cols-3" style="margin-bottom: var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Text Input</label>
+          <input type="text" class="form-control" placeholder="e.g. Ramesh Chandra Gupta">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Search Input with Icon</label>
+          <div class="search-input-wrapper">
+            <i data-lucide="search"></i>
+            <input type="text" class="form-control" placeholder="Search case numbers...">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Dropdown</label>
+          <select class="form-select">
+            <option>Civil Division Bench</option>
+            <option>Criminal Appellate Division</option>
+            <option>Commercial Arbitration Court</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: var(--space-6); align-items: center; flex-wrap: wrap; border-top: 1px solid var(--color-border); padding-top: var(--space-4);">
+        <!-- Switch -->
+        <label class="form-switch">
+          <input type="checkbox" checked>
+          <span>Enable Real-time SMS Alerts</span>
+        </label>
+
+        <label class="form-switch">
+          <input type="checkbox">
+          <span>Quiet Hours</span>
+        </label>
+
+        <!-- Segmented Control -->
+        <div class="segmented-control">
+          <div class="segmented-item active">Cause List</div>
+          <div class="segmented-item">Disposed</div>
+          <div class="segmented-item">Reserved</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. BADGES & STATUS CHIPS -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">5. Badges & Status Chips (Soft Tint with Indicator Dot)</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Translucent tinted pills with leading dot indicators and active pulsing dots.</p>
+    </div>
+
+    <div class="card" style="padding: var(--space-6);">
+      <div style="display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+        <span class="badge badge-success">Completed</span>
+        <span class="badge badge-warning">Scrutiny Review</span>
+        <span class="badge badge-danger">High Priority / Urgent</span>
+        <span class="badge badge-danger pulse-dot">Live Hearing In Progress</span>
+        <span class="badge badge-info">Hearing Scheduled</span>
+        <span class="badge badge-primary">Civil Petition</span>
+        <span class="badge badge-accent">AI Synthesized</span>
+        <span class="badge badge-neutral">Archived Docket</span>
+        <span class="badge badge-success badge-no-dot">No Dot Badge</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. STAT CARDS & METRICS -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">6. Stat Metric Cards (Animated Count-Up)</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Minimalist cards with hairline borders, trend chips, and tabular numeric display.</p>
+    </div>
+
+    <div class="grid grid-cols-4">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-title">Active Benches</span>
+          <div class="stat-icon"><i data-lucide="scale"></i></div>
+        </div>
+        <div class="stat-value">14</div>
+        <div class="stat-trend positive"><i data-lucide="trending-up" style="width: 13px; height: 13px;"></i> 100% Bench Capacity</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-title">Hearings Today</span>
+          <div class="stat-icon" style="color: var(--color-accent);"><i data-lucide="calendar"></i></div>
+        </div>
+        <div class="stat-value">28</div>
+        <div class="stat-trend neutral"><i data-lucide="clock" style="width: 13px; height: 13px;"></i> Scheduled Cause List</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-title">Pending Petitions</span>
+          <div class="stat-icon" style="color: var(--color-warning);"><i data-lucide="alert-circle"></i></div>
+        </div>
+        <div class="stat-value">18</div>
+        <div class="stat-trend negative"><i data-lucide="arrow-up-right" style="width: 13px; height: 13px;"></i> 4 Fresh Filings</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-title">Disposal Velocity</span>
+          <div class="stat-icon" style="color: var(--color-success);"><i data-lucide="check-circle-2"></i></div>
+        </div>
+        <div class="stat-value">94%</div>
+        <div class="stat-trend positive"><i data-lucide="trending-up" style="width: 13px; height: 13px;"></i> +12% MoM</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. DATA TABLES -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">7. Data Tables (Sticky Header & Row Hover)</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Crisp borders, uppercase sticky column headers, and soft hover state.</p>
+    </div>
+
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Case Number</th>
+            <th>Title & Parties</th>
+            <th>Case Type</th>
+            <th>Status</th>
+            <th>Next Hearing</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-family: var(--font-mono); font-weight: 600; color: var(--color-accent);">CIV/2026/00010</td>
+            <td>
+              <div style="font-weight: 600;">Surya Enterprises vs. Global Tech Logistics</div>
+              <div style="font-size: 0.75rem; color: var(--color-text-muted);">High Court of Delhi &bull; Courtroom 1</div>
+            </td>
+            <td><span class="badge badge-primary">Civil</span></td>
+            <td><span class="badge badge-info">Hearing</span></td>
+            <td class="tabular-nums" style="font-size: 0.82rem;">20 Nov 2026, 10:30 AM</td>
+            <td style="text-align: right;">
+              <button class="btn btn-secondary btn-xs" onclick="openDrawer('case-detail-drawer')">Inspect Docket</button>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-family: var(--font-mono); font-weight: 600; color: var(--color-accent);">BAIL/2026/00011</td>
+            <td>
+              <div style="font-weight: 600;">Harmanpreet Singh vs. State (NCT of Delhi)</div>
+              <div style="font-size: 0.75rem; color: var(--color-text-muted);">Patiala House Courts &bull; Courtroom 2</div>
+            </td>
+            <td><span class="badge badge-danger">Bail</span></td>
+            <td><span class="badge badge-danger pulse-dot">Urgent Listing</span></td>
+            <td class="tabular-nums" style="font-size: 0.82rem;">17 Nov 2026, 02:15 PM</td>
+            <td style="text-align: right;">
+              <button class="btn btn-secondary btn-xs" onclick="openDrawer('case-detail-drawer')">Inspect Docket</button>
+            </td>
+          </tr>
+          <tr>
+            <td style="font-family: var(--font-mono); font-weight: 600; color: var(--color-accent);">WRIT/2026/00020</td>
+            <td>
+              <div style="font-weight: 600;">Ramesh Chandra Gupta vs. Municipal Corporation</div>
+              <div style="font-size: 0.75rem; color: var(--color-text-muted);">High Court of Delhi &bull; Chief Justice Division</div>
+            </td>
+            <td><span class="badge badge-primary">Writ</span></td>
+            <td><span class="badge badge-success">Disposed</span></td>
+            <td class="tabular-nums" style="font-size: 0.82rem;">Disposed on 12 Nov 2026</td>
+            <td style="text-align: right;">
+              <button class="btn btn-secondary btn-xs" onclick="openDrawer('case-detail-drawer')">Inspect Docket</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 8. MODALS & TOAST TRIGGERS -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">8. Modals, Drawers & Toast Feedback</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Click to preview interactive overlay dialogs and system toast alerts.</p>
+    </div>
+
+    <div class="card" style="padding: var(--space-6);">
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="openModal('preview-sample-modal')">
+          <i data-lucide="layout" style="width: 14px; height: 14px;"></i> Open Sample Modal
+        </button>
+        <button class="btn btn-secondary" onclick="openDrawer('case-detail-drawer')">
+          <i data-lucide="panel-right" style="width: 14px; height: 14px;"></i> Open Sample Drawer
+        </button>
+        <button class="btn btn-success btn-sm" onclick="showToast('Judicial order cryptographically signed with SHA-256 seal.', 'success')">
+          Trigger Success Toast
+        </button>
+        <button class="btn btn-warning btn-sm" onclick="showToast('Courtroom booking collision detected. 3 conflict-free slots suggested.', 'warning')">
+          Trigger Warning Toast
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="showToast('Invalid file format: only verified legal PDFs allowed.', 'danger')">
+          Trigger Danger Toast
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. SKELETON LOADERS & PROGRESS -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">9. Skeleton Shimmers & Progress Indicators</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Linear-style subtle gradient shimmer animations for async telemetry loading.</p>
+    </div>
+
+    <div class="grid grid-cols-2">
+      <div class="card" style="padding: var(--space-6);">
+        <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+          <div class="skeleton skeleton-avatar"></div>
+          <div style="flex: 1;">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-text" style="width: 40%;"></div>
+          </div>
+        </div>
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-text" style="width: 85%;"></div>
+        <div class="skeleton skeleton-text" style="width: 65%;"></div>
+      </div>
+
+      <div class="card" style="padding: var(--space-6); display: flex; flex-direction: column; justify-content: center; gap: var(--space-4);">
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
+            <span style="font-weight: 500;">Judicial Disposal Progress</span>
+            <span class="tabular-nums" style="font-weight: 600; color: var(--color-accent);">75%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 75%;"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
+            <span style="font-weight: 500;">Scrutiny Queue Clearance</span>
+            <span class="tabular-nums" style="font-weight: 600; color: var(--color-success);">92%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 92%; background: var(--color-success);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. STEPPER & TIMELINE -->
+  <section style="margin-bottom: var(--space-10);">
+    <div style="margin-bottom: var(--space-4);">
+      <h3 style="font-size: 1.25rem;">10. Stepper & Procedural Timeline</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted);">Citizen case status stepper and judicial proceeding milestone nodes.</p>
+    </div>
+
+    <div class="card" style="padding: var(--space-6); margin-bottom: var(--space-4);">
+      <div class="stepper">
+        <div class="step-item completed">
+          <div class="step-number"><i data-lucide="check" style="width: 14px; height: 14px;"></i></div>
+          <div class="step-label">1. Petition Filed</div>
+        </div>
+        <div class="step-item completed">
+          <div class="step-number"><i data-lucide="check" style="width: 14px; height: 14px;"></i></div>
+          <div class="step-label">2. Registry Scrutiny</div>
+        </div>
+        <div class="step-item active">
+          <div class="step-number">3</div>
+          <div class="step-label">3. Bench Hearing</div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">4</div>
+          <div class="step-label">4. Order Reserved</div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">5</div>
+          <div class="step-label">5. Final Judgment</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="padding: var(--space-6);">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-marker"></div>
+          <div class="timeline-date">16 Nov 2026, 11:30 AM</div>
+          <div class="timeline-content"><strong>Final Arguments Concluded</strong> &bull; Coram: Hon'ble Justice Rajesh Sharma. Judgment reserved.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-marker"></div>
+          <div class="timeline-date">10 Nov 2026, 10:30 AM</div>
+          <div class="timeline-content"><strong>Cross-Examination of Prosecution Witness</strong> &bull; Document exhibits Ex-A through Ex-F marked.</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-marker"></div>
+          <div class="timeline-date">01 Nov 2026, 09:45 AM</div>
+          <div class="timeline-content"><strong>Interim Stay Granted</strong> &bull; Digital Order verified via SHA-256 seal (NYA-ORD-0004).</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- SAMPLE PREVIEW MODAL -->
+<div id="preview-sample-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="card-title">Sample Modal Dialog</h3>
+      <button onclick="closeModal('preview-sample-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom: var(--space-4);">
+        This modal demonstrates the refined Linear-style dialog with diffuse backdrop blur, crisp border radius, and accessible keyboard focus isolation.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Action Notes</label>
+        <textarea class="form-control" placeholder="Enter judicial scrutiny remarks..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('preview-sample-modal')">Dismiss</button>
+      <button class="btn btn-primary" onclick="closeModal('preview-sample-modal'); showToast('Action confirmed successfully!', 'success');">Confirm Action</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

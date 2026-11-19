@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1F3A" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5E6B3" />
+      <stop offset="50%" stop-color="#C9A24B" />
+      <stop offset="100%" stop-color="#8C6B23" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Shield / Emblem Background -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#primaryGrad)" stroke="url(#goldGrad)" stroke-width="2.5" />
+  
+  <!-- Scales of Justice -->
+  <!-- Center Post & Top Finial -->
+  <circle cx="32" cy="14" r="2.5" fill="url(#goldGrad)" />
+  <line x1="32" y1="14" x2="32" y2="48" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
+  <line x1="20" y1="48" x2="44" y2="48" stroke="url(#goldGrad)" stroke-width="3.5" stroke-linecap="round" />
+  
+  <!-- Horizontal Balance Beam -->
+  <line x1="16" y1="20" x2="48" y2="20" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="32" cy="20" r="2.5" fill="url(#goldGrad)" />
+  
+  <!-- Left Pan Strings & Pan -->
+  <line x1="16" y1="20" x2="10" y2="34" stroke="url(#goldGrad)" stroke-width="1.2" />
+  <line x1="16" y1="20" x2="22" y2="34" stroke="url(#goldGrad)" stroke-width="1.2" />
+  <path d="M 8 34 Q 16 41 24 34 Z" fill="url(#goldGrad)" />
+  
+  <!-- Right Pan Strings & Pan -->
+  <line x1="48" y1="20" x2="42" y2="34" stroke="url(#goldGrad)" stroke-width="1.2" />
+  <line x1="48" y1="20" x2="54" y2="34" stroke="url(#goldGrad)" stroke-width="1.2" />
+  <path d="M 40 34 Q 48 41 56 34 Z" fill="url(#goldGrad)" />
+</svg>

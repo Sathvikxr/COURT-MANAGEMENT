@@ -1,0 +1,59 @@
+name: NyayaDesk CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test Suite & Security Audit
+    runs-on: windows-latest
+
+    env:
+      DISABLE_SQLALCHEMY_CEXT: "1"
+      FLASK_ENV: "testing"
+      SECRET_KEY: "ci-nyayadesk-test-secret-key"
+      AI_KILL_SWITCH: "false"
+      GEMINI_API_KEY: ""
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pip-audit
+
+      - name: Security & Vulnerability Audit (pip-audit)
+        run: |
+          python -m pip_audit -r requirements.txt
+
+      - name: Install Playwright Browsers
+        run: |
+          playwright install chromium
+
+      - name: Run Core Automated Test Suite (Pytest + Coverage)
+        run: |
+          python -m pytest tests/ -k "not test_e2e_playwright and not test_accessibility" -v --cov=app --cov-report=term-missing
+
+      - name: Run Browser E2E & Accessibility Tests (Playwright + Axe)
+        run: |
+          python -m pytest tests/test_e2e_playwright.py tests/test_accessibility.py -v
+
+      - name: Test Fresh-Clone Database Initialization & Seeding
+        run: |
+          python -c "import os; from run import initialize_database; initialize_database(); from app.models import User, Case, PrecedentLibrary; print(f'Seeded: {User.query.count()} users, {Case.query.count()} cases, {PrecedentLibrary.query.count()} precedents')"

@@ -1,0 +1,456 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Hearing Reminders & Attendance - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  
+  <!-- 1. PAGE HEADER (Linear / Stripe Style) -->
+  <div class="dashboard-page-header">
+    <div class="header-left">
+      <div class="header-eyebrow">
+        <span class="role-chip" style="background: rgba(201, 162, 75, 0.12); color: var(--color-accent);">
+          <i data-lucide="bell-ring" style="width: 12px; height: 12px;"></i> Autonomous Scheduling Engine
+        </span>
+        <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
+          <span class="status-indicator live"></span> APScheduler Cron &bull; 60-Second Polling Cadence
+        </span>
+      </div>
+      <h1 class="page-title">Automated Hearing Reminders & Attendance</h1>
+      <p class="page-subtitle">
+        Automated routine monitoring 7-day, 1-day, and 2-hour milestones with duplicate suppression, carrier retries, and two-way attendance confirmation.
+      </p>
+    </div>
+    <div class="header-actions">
+      <a href="{{ url_for('dashboards.sms_outbox') }}" class="btn btn-outline btn-sm">
+        <i data-lucide="send"></i> View SMS Outbox
+      </a>
+      <button id="btn-scan-now" class="btn btn-accent btn-sm" onclick="triggerScanNow()">
+        <i data-lucide="play"></i> Run Reminder Job Now
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. DIAGNOSTIC KPI ROW -->
+  <div class="kpi-grid" style="margin-bottom: var(--space-6);">
+    <!-- KPI 1 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Active Cause Lists</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="calendar" style="width: 12px; height: 12px;"></i> Scheduled
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-active-hearings" class="kpi-number" data-count="0">0</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 14L26 15L38 10L50 8L62 4" stroke="var(--color-primary-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Upcoming listed hearings</div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Critical (< 2 Hours)</span>
+        <span class="kpi-delta negative">
+          <i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i> Urgent
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-critical-hearings" class="kpi-number" style="color: var(--color-danger);" data-count="0">0</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 14L14 16L26 11L38 18L50 12L62 4" stroke="var(--color-danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Imminent attendance windows</div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Attendance Confirmed</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check-check" style="width: 12px; height: 12px;"></i> Verified
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-confirmed-count" class="kpi-number" style="color: var(--color-success);" data-count="0">0</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 16L14 13L26 14L38 9L50 11L62 3" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Via Two-Way SMS / WhatsApp</div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Scheduler Health</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check" style="width: 12px; height: 12px;"></i> 1m Loop
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" style="font-size: 1.4rem; color: var(--color-success);">ACTIVE</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 16L14 14L26 10L38 12L50 6L62 2" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Background worker active</div>
+    </div>
+  </div>
+
+  <!-- 3. INTERACTIVE 2-WAY REPLY SIMULATION GATEWAY -->
+  <div class="card" style="margin-bottom: var(--space-8); padding: var(--space-6); border: 1px solid rgba(201, 162, 75, 0.35); background: linear-gradient(135deg, rgba(201, 162, 75, 0.06), var(--color-surface));">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-4); flex-wrap: wrap; gap: var(--space-2);">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.15); color: var(--color-accent-dark); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">
+          <i data-lucide="smartphone" style="width: 12px; height: 12px;"></i> Inbound Webhook Testbed
+        </div>
+        <h4 style="font-size: 1.15rem; font-weight: 700; color: var(--color-text); margin: 0;">Two-Way Attendance Simulation Gateway</h4>
+        <p style="font-size: 0.82rem; color: var(--color-text-muted); margin: 2px 0 0 0;">
+          Simulate incoming mobile carrier messages. Typing <code>CONFIRM</code> updates the bench cause list docket in real-time.
+        </p>
+      </div>
+      <span class="status-pill status-disposed"><span class="status-dot"></span> Webhook Ready</span>
+    </div>
+
+    <div class="grid grid-cols-12" style="gap: var(--space-4); align-items: flex-end;">
+      <div style="grid-column: span 4;">
+        <label class="form-label" style="font-size: 0.8rem;" for="sim-sender">Sender Contact Identifier</label>
+        <select id="sim-sender" class="form-control" style="font-size: 0.84rem;">
+          <option value="9810011008">Ramesh Chandra Gupta (Litigant 1 - 9810011008)</option>
+          <option value="9810011006">Adv. Amit Verma (Lawyer 1 - 9810011006)</option>
+          <option value="9810011009">Priya Sundaram (Litigant 2 - 9810011009)</option>
+          <option value="9810011007">Adv. Sunita Kapoor (Lawyer 2 - 9810011007)</option>
+        </select>
+      </div>
+
+      <div style="grid-column: span 5;">
+        <label class="form-label" style="font-size: 0.8rem;" for="sim-message">Simulated Inbound Message Text</label>
+        <div style="display: flex; gap: var(--space-2);">
+          <input type="text" id="sim-message" class="form-control" value="CONFIRM" style="font-weight: 600; font-family: var(--font-mono); font-size: 0.85rem;">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('sim-message').value='CONFIRM'">CONFIRM</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('sim-message').value='ADJOURN'">ADJOURN</button>
+        </div>
+      </div>
+
+      <div style="grid-column: span 3;">
+        <button id="btn-simulate-reply" class="btn btn-primary" style="width: 100%;" onclick="executeInboundSimulation()">
+          <i data-lucide="check-circle-2"></i> Simulate Inbound Reply
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. UPCOMING HEARINGS REMINDER TRACKER TABLE -->
+  <section class="card" style="margin-bottom: var(--space-8); padding: 0; overflow: hidden; border: 1px solid var(--color-border);">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div>
+          <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Scheduled Hearings & Automated Milestone Tracking</h3>
+          <p class="card-subtitle" style="font-size: 0.78rem; margin: 0;">
+            Hearings scanned by APScheduler. Reminders trigger automatically at 7 days, 1 day, and 2 hours before proceedings.
+          </p>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-outline btn-sm" onclick="loadUpcomingHearings()">
+          <i data-lucide="rotate-cw"></i> Refresh List
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Case Docket</th>
+            <th>Courtroom & Judge</th>
+            <th>Scheduled Time</th>
+            <th>Time Remaining</th>
+            <th>Attendance Status</th>
+            <th style="text-align: center;">Milestone Dispatches (7d / 1d / 2h)</th>
+            <th style="width: 140px; text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="hearings-table-body">
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+              Loading scheduled hearings...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- Modal: Manual Hearing Reminder Dispatch -->
+<div id="manual-reminder-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 520px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(37, 99, 235, 0.1); color: var(--color-info); font-size: 0.72rem; font-weight: 700; margin-bottom: 2px;">
+          <i data-lucide="send" style="width: 12px; height: 12px;"></i> Direct Dispatch
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.2rem; color: var(--color-text);">Manual Reminder Dispatch</h3>
+      </div>
+      <button onclick="closeModal('manual-reminder-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <input type="hidden" id="modal-hearing-id">
+
+    <div style="background: var(--color-surface-subtle); padding: var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-4); font-size: 0.85rem; border: 1px solid var(--color-border);">
+      <div><strong>Case:</strong> <span id="modal-case-number" style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary-dark);">CIV/2026/...</span></div>
+      <div><strong>Listing:</strong> <span id="modal-case-time">Today</span></div>
+      <div><strong>Courtroom:</strong> <span id="modal-courtroom">Courtroom 1</span></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="modal-reminder-type">Reminder Milestone Template</label>
+      <select id="modal-reminder-type" class="form-control">
+        <option value="2_hours">2 Hours Prior (Urgent Attendance Call with CONFIRM prompt)</option>
+        <option value="1_day">1 Day Prior (Tomorrow's Cause List Listing Alert)</option>
+        <option value="7_days">7 Days Advance (Formal Hearing Schedule Notification)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="modal-channel">Preferred Gateway Channel</label>
+      <select id="modal-channel" class="form-control">
+        <option value="SMS">📱 SMS Gateway (Twilio / Demo Gateway)</option>
+        <option value="WhatsApp">💬 WhatsApp Business API</option>
+        <option value="Email">✉️ Official Judicial Email (SMTP)</option>
+        <option value="In-App">🔔 In-App High-Priority Alert</option>
+      </select>
+      <small style="color: var(--color-text-muted); font-size: 0.72rem; margin-top: 4px; display: block;">
+        * Automatically cascades to WhatsApp, Email, or In-App if recipient preferences or gateway constraints require fallback.
+      </small>
+    </div>
+
+    <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+      <button class="btn btn-outline" onclick="closeModal('manual-reminder-modal')">Cancel</button>
+      <button class="btn btn-accent" id="btn-dispatch-manual" onclick="submitManualReminder()">
+        <i data-lucide="send"></i> Dispatch Reminder
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let cachedHearings = [];
+
+async function loadUpcomingHearings() {
+  const tbody = document.getElementById('hearings-table-body');
+  try {
+    const res = await fetch('/api/reminders/upcoming');
+    if (!res.ok) throw new Error('API Error');
+    const data = await res.json();
+    cachedHearings = data.hearings || [];
+
+    // Stats
+    document.getElementById('stat-active-hearings').textContent = cachedHearings.length;
+    document.getElementById('stat-critical-hearings').textContent = cachedHearings.filter(h => h.hours_remaining <= 2.5 && h.hours_remaining >= 0).length;
+    document.getElementById('stat-confirmed-count').textContent = cachedHearings.filter(h => h.attendance_status === 'Confirmed').length;
+
+    if (cachedHearings.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+            No scheduled hearings currently listed in the upcoming reminder window.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = cachedHearings.map(h => {
+      let timeRemainingBadge = '';
+      if (h.hours_remaining < 0) {
+        timeRemainingBadge = `<span class="badge badge-secondary" style="font-size:0.75rem;">Proceeding in session</span>`;
+      } else if (h.hours_remaining <= 2.5) {
+        timeRemainingBadge = `<span class="badge badge-danger" style="font-size:0.75rem; font-weight:700;"><i data-lucide="alert-circle" style="width:12px;height:12px;"></i> ${h.hours_remaining} hrs (Urgent)</span>`;
+      } else if (h.hours_remaining <= 28) {
+        timeRemainingBadge = `<span class="badge badge-warning" style="font-size:0.75rem;">${h.hours_remaining} hrs (Tomorrow)</span>`;
+      } else {
+        const days = (h.hours_remaining / 24).toFixed(1);
+        timeRemainingBadge = `<span class="badge badge-info" style="font-size:0.75rem;">${days} days remaining</span>`;
+      }
+
+      const attendanceBadge = h.attendance_status === 'Confirmed'
+        ? `<span class="status-pill status-disposed" style="font-size:0.72rem;"><span class="status-dot"></span> CONFIRMED</span>`
+        : `<span class="status-pill status-hearing" style="font-size:0.72rem;"><span class="status-dot"></span> Unconfirmed</span>`;
+
+      // Milestones 7d, 1d, 2h
+      const pill7d = h.reminders_sent.seven_days 
+        ? `<span class="badge badge-success" style="font-size:0.68rem;" title="7-day advance notice dispatched">7d ✓</span>` 
+        : `<span class="badge badge-outline" style="font-size:0.68rem; opacity:0.5;" title="Not sent yet">7d &bull;</span>`;
+
+      const pill1d = h.reminders_sent.one_day 
+        ? `<span class="badge badge-success" style="font-size:0.68rem;" title="1-day cause list notice dispatched">1d ✓</span>` 
+        : `<span class="badge badge-outline" style="font-size:0.68rem; opacity:0.5;" title="Not sent yet">1d &bull;</span>`;
+
+      const pill2h = h.reminders_sent.two_hours 
+        ? `<span class="badge badge-danger" style="font-size:0.68rem;" title="2-hour urgent call dispatched">2h ✓</span>` 
+        : `<span class="badge badge-outline" style="font-size:0.68rem; opacity:0.5;" title="Not sent yet">2h &bull;</span>`;
+
+      return `
+        <tr>
+          <td>
+            <div style="font-weight: 700; font-size: 0.88rem; font-family: var(--font-mono); color: var(--color-primary-dark);">${h.case_number}</div>
+            <div style="font-size: 0.78rem; color: var(--color-text); font-weight: 500;">${h.case_title}</div>
+          </td>
+          <td>
+            <div style="font-weight: 600; font-size: 0.82rem; color: var(--color-text);">${h.courtroom}</div>
+            <div style="font-size: 0.72rem; color: var(--color-text-muted);">${h.judge_name}</div>
+          </td>
+          <td style="font-size: 0.82rem; font-weight: 600; font-family: var(--font-mono); white-space: nowrap;">
+            ${h.scheduled_at}
+          </td>
+          <td>
+            ${timeRemainingBadge}
+          </td>
+          <td>
+            ${attendanceBadge}
+          </td>
+          <td style="text-align: center;">
+            <div style="display: flex; gap: 0.25rem; justify-content: center;">
+              ${pill7d} ${pill1d} ${pill2h}
+            </div>
+          </td>
+          <td style="text-align: right;">
+            <button class="btn btn-outline btn-sm" style="font-size: 0.72rem; padding: 3px 8px;" onclick="openManualReminderModal(${h.hearing_id})">
+              <i data-lucide="bell-ring" style="width: 12px; height: 12px;"></i> Remind
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  } catch (err) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--color-danger); padding: 2rem;">Error retrieving upcoming hearings.</td></tr>';
+  }
+}
+
+async function triggerScanNow() {
+  const btn = document.getElementById('btn-scan-now');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i data-lucide="loader" class="spin" style="width:14px;height:14px;"></i> Scanning...`;
+
+  try {
+    const res = await fetch('/api/reminders/scan-now', { method: 'POST' });
+    const data = await res.json();
+    
+    if (data.success) {
+      showToast(data.message, 'success', 6000);
+      loadUpcomingHearings();
+    } else {
+      showToast('Scan completed with zero items.', 'info');
+    }
+  } catch (err) {
+    showToast('Failed to execute reminder job.', 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  }
+}
+
+async function executeInboundSimulation() {
+  const sender = document.getElementById('sim-sender').value;
+  const msg = document.getElementById('sim-message').value.trim();
+  const btn = document.getElementById('btn-simulate-reply');
+
+  if (!msg) {
+    showToast('Please specify a reply text (e.g. CONFIRM)', 'warning');
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/notifications/simulate-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender_contact: sender, message_text: msg })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      showToast(result.message, 'success', 6000);
+      loadUpcomingHearings();
+    } else {
+      showToast(result.message || 'Simulation recorded', 'info');
+    }
+  } catch (err) {
+    showToast('Failed to deliver simulated inbound SMS', 'danger');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function openManualReminderModal(hearingId) {
+  const h = cachedHearings.find(item => item.hearing_id === hearingId);
+  if (!h) return;
+
+  document.getElementById('modal-hearing-id').value = hearingId;
+  document.getElementById('modal-case-number').textContent = h.case_number;
+  document.getElementById('modal-case-time').textContent = h.scheduled_at;
+  document.getElementById('modal-courtroom').textContent = h.courtroom;
+  openModal('manual-reminder-modal');
+}
+
+async function submitManualReminder() {
+  const hearingId = document.getElementById('modal-hearing-id').value;
+  const remType = document.getElementById('modal-reminder-type').value;
+  const channel = document.getElementById('modal-channel').value;
+  const btn = document.getElementById('btn-dispatch-manual');
+
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/reminders/send-hearing-reminder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hearing_id: hearingId, reminder_type: remType, channel: channel })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      showToast(result.message, 'success', 5000);
+      closeModal('manual-reminder-modal');
+      loadUpcomingHearings();
+    } else {
+      showToast(result.error || 'Failed to dispatch reminder', 'danger');
+    }
+  } catch (err) {
+    showToast('Error communicating with reminder dispatcher', 'danger');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initStatCountUp === 'function') initStatCountUp();
+  loadUpcomingHearings();
+});
+</script>
+{% endblock %}

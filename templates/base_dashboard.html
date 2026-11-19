@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}NyayaDesk - Court Management System{% endblock %}</title>
+
+  <!-- Google Fonts: Inter & Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- FullCalendar CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+  <!-- NyayaDesk Modern Design System (Linear / Stripe style) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system.css') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+  <link rel="shortcut icon" href="{{ url_for('favicon') }}">
+  {% block styles %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="toggleMobileSidebar()"></div>
+    
+    <!-- SIDEBAR NAVIGATION (Linear / Stripe Collapsible Roster) -->
+    <aside id="app-sidebar" class="app-sidebar">
+      <div class="sidebar-header">
+        <a href="{{ url_for('main.index') }}" class="sidebar-brand">
+          <div class="court-emblem">§</div>
+          <div class="sidebar-brand-text">
+            <span>NYAYADESK</span>
+            <div style="font-size: 0.65rem; font-family: var(--font-sans); color: var(--color-accent); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">
+              {{ current_user.role }} WORKSPACE
+            </div>
+          </div>
+        </a>
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Toggle Sidebar Width" aria-label="Toggle Sidebar Width">
+          <i data-lucide="chevrons-left" style="width: 16px; height: 16px;"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- Role-specific sidebar navigation -->
+        {% if current_user.role == 'government' %}
+          <div class="sidebar-section-title">Executive Governance</div>
+          <a href="{{ url_for('dashboards.government_dashboard') }}" class="nav-link active">
+            <i data-lucide="layout-dashboard"></i>
+            <span class="nav-item-text">Executive Dashboard</span>
+          </a>
+          <a href="#approvals-section" class="nav-link">
+            <i data-lucide="user-check"></i>
+            <span class="nav-item-text">Judicial Clearances</span>
+          </a>
+          <a href="#courts-section" class="nav-link">
+            <i data-lucide="landmark"></i>
+            <span class="nav-item-text">Courts & Benches</span>
+          </a>
+          <a href="#users-section" class="nav-link">
+            <i data-lucide="users"></i>
+            <span class="nav-item-text">Judges & Registrars</span>
+          </a>
+          <a href="#analytics-section" class="nav-link">
+            <i data-lucide="bar-chart-3"></i>
+            <span class="nav-item-text">National Analytics</span>
+          </a>
+          <a href="#audit-section" class="nav-link">
+            <i data-lucide="shield-alert"></i>
+            <span class="nav-item-text">Audit Trail</span>
+          </a>
+
+        {% elif current_user.role == 'registrar' %}
+          <div class="sidebar-section-title">Registry Scrutiny</div>
+          <a href="{{ url_for('dashboards.registrar_dashboard') }}" class="nav-link active">
+            <i data-lucide="layout-dashboard"></i>
+            <span class="nav-item-text">Registry Overview</span>
+          </a>
+          <a href="#scrutiny-section" class="nav-link">
+            <i data-lucide="file-search"></i>
+            <span class="nav-item-text">Filing Scrutiny</span>
+          </a>
+          <a href="#allocation-section" class="nav-link">
+            <i data-lucide="git-pull-request"></i>
+            <span class="nav-item-text">Bench Allocation</span>
+          </a>
+          <a href="#clerk-approvals" class="nav-link">
+            <i data-lucide="user-plus"></i>
+            <span class="nav-item-text">Clerk Clearances</span>
+          </a>
+
+        {% elif current_user.role == 'judge' %}
+          <div class="sidebar-section-title">Judicial Bench</div>
+          <a href="{{ url_for('dashboards.judge_dashboard') }}" class="nav-link active">
+            <i data-lucide="gavel"></i>
+            <span class="nav-item-text">Bench & Cause List</span>
+          </a>
+          <a href="#calendar-section" class="nav-link">
+            <i data-lucide="calendar"></i>
+            <span class="nav-item-text">Hearing Calendar</span>
+          </a>
+          <a href="#docket-section" class="nav-link">
+            <i data-lucide="folder-kanban"></i>
+            <span class="nav-item-text">Assigned Cases</span>
+          </a>
+          <a href="#orders-section" class="nav-link">
+            <i data-lucide="file-signature"></i>
+            <span class="nav-item-text">Draft Orders</span>
+          </a>
+
+        {% elif current_user.role == 'clerk' %}
+          <div class="sidebar-section-title">Court Master Desk</div>
+          <a href="{{ url_for('dashboards.clerk_dashboard') }}" class="nav-link active">
+            <i data-lucide="monitor"></i>
+            <span class="nav-item-text">Master Calling List</span>
+          </a>
+          <a href="#register-wizard-section" class="nav-link">
+            <i data-lucide="plus-circle"></i>
+            <span class="nav-item-text">Register New Case</span>
+          </a>
+          <a href="#schedule-hearing-section" class="nav-link">
+            <i data-lucide="calendar-plus"></i>
+            <span class="nav-item-text">Schedule Hearing</span>
+          </a>
+
+        {% elif current_user.role == 'lawyer' %}
+          <div class="sidebar-section-title">Advocate Practice</div>
+          <a href="{{ url_for('dashboards.lawyer_dashboard') }}" class="nav-link active">
+            <i data-lucide="briefcase"></i>
+            <span class="nav-item-text">Active Briefs</span>
+          </a>
+          <a href="#efile-section" class="nav-link">
+            <i data-lucide="file-plus-2"></i>
+            <span class="nav-item-text">E-File Petition</span>
+          </a>
+          <a href="#billing-section" class="nav-link">
+            <i data-lucide="receipt"></i>
+            <span class="nav-item-text">Client Ledger</span>
+          </a>
+
+        {% elif current_user.role == 'litigant' %}
+          <div class="sidebar-section-title">Citizen Workspace</div>
+          <a href="{{ url_for('dashboards.litigant_dashboard') }}" class="nav-link active">
+            <i data-lucide="scale"></i>
+            <span class="nav-item-text">My Legal Cases</span>
+          </a>
+          <a href="#payments-section" class="nav-link">
+            <i data-lucide="credit-card"></i>
+            <span class="nav-item-text">E-Court Fees</span>
+          </a>
+          <a href="#certified-orders" class="nav-link">
+            <i data-lucide="file-check"></i>
+            <span class="nav-item-text">Certified Orders</span>
+          </a>
+
+        {% elif current_user.role == 'police' %}
+          <div class="sidebar-section-title">Law Enforcement</div>
+          <a href="{{ url_for('dashboards.police_dashboard') }}" class="nav-link active">
+            <i data-lucide="shield"></i>
+            <span class="nav-item-text">Criminal Dockets</span>
+          </a>
+          <a href="#bail-tracker-section" class="nav-link">
+            <i data-lucide="alert-octagon"></i>
+            <span class="nav-item-text">Bail & Custody</span>
+          </a>
+          <a href="#fir-upload-section" class="nav-link">
+            <i data-lucide="file-up"></i>
+            <span class="nav-item-text">Upload FIR</span>
+          </a>
+        {% endif %}
+
+        <div class="sidebar-section-title">Communications</div>
+        <a href="{{ url_for('dashboards.notification_center') }}" class="nav-link">
+          <i data-lucide="bell"></i>
+          <span class="nav-item-text">Notification Center</span>
+        </a>
+        {% if current_user.role in ['clerk', 'registrar', 'government', 'judge'] %}
+        <a href="{{ url_for('dashboards.reminders_console') }}" class="nav-link">
+          <i data-lucide="alarm-clock"></i>
+          <span class="nav-item-text">Hearing Reminders</span>
+        </a>
+        <a href="{{ url_for('dashboards.sms_outbox') }}" class="nav-link">
+          <i data-lucide="send"></i>
+          <span class="nav-item-text">SMS Outbox</span>
+        </a>
+        {% endif %}
+        <a href="javascript:void(0)" onclick="openNotificationPrefsModal()" class="nav-link">
+          <i data-lucide="sliders"></i>
+          <span class="nav-item-text">Alert Preferences</span>
+        </a>
+
+        <div class="sidebar-section-title">Platform</div>
+        <a href="{{ url_for('main.demo_guide') }}" class="nav-link">
+          <i data-lucide="book-open"></i>
+          <span class="nav-item-text">Demo Guide</span>
+        </a>
+        <a href="javascript:void(0)" onclick="openGlobalSearch()" class="nav-link">
+          <i data-lucide="search"></i>
+          <span class="nav-item-text">Search Records</span>
+        </a>
+        <a href="{{ url_for('main.index') }}" class="nav-link">
+          <i data-lucide="globe"></i>
+          <span class="nav-item-text">Public Portal</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar">
+          {{ current_user.full_name[:2]|upper }}
+        </div>
+        <div class="user-info-text" style="flex: 1; overflow: hidden;">
+          <div style="font-size: 0.82rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; color: var(--color-text);">
+            {{ current_user.full_name }}
+          </div>
+          <div style="font-size: 0.72rem; color: var(--color-text-muted);">{{ current_user.role|capitalize }}</div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" style="color: var(--color-danger); display: flex; align-items: center;" title="Sign Out">
+          <i data-lucide="log-out" style="width: 17px; height: 17px;"></i>
+        </a>
+      </div>
+    </aside>
+
+    <!-- MAIN APP CANVAS -->
+    <div class="app-main">
+      
+      <!-- TOPBAR (Glassmorphic Linear Style) -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button class="icon-btn" onclick="toggleMobileSidebar()" style="display: none;" id="mobile-sidebar-toggle" aria-label="Toggle Navigation Menu">
+            <i data-lucide="menu"></i>
+          </button>
+
+          <!-- Breadcrumbs item -->
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--color-text-muted);">
+            <span style="font-weight: 500;">Judiciary</span>
+            <span>/</span>
+            <span style="color: var(--color-text); font-weight: 600;">{{ current_user.role|capitalize }} Workspace</span>
+          </div>
+
+          <!-- Global Quick Search Trigger -->
+          <div class="search-input-wrapper" onclick="openGlobalSearch()" style="margin-left: var(--space-4);">
+            <i data-lucide="search"></i>
+            <input type="text" class="topbar-search-input" placeholder="Search records (Ctrl+K)..." readonly aria-label="Search judicial records">
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Live Judicial Clock -->
+          <div id="live-judicial-clock" class="tabular-nums" style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--color-text-muted); display: flex; align-items: center; gap: 4px;">
+            <i data-lucide="clock" style="width: 13px; height: 13px;"></i>
+          </div>
+
+          <!-- Light / Dark Mode Toggle -->
+          <button id="theme-toggle-btn" class="icon-btn" onclick="toggleTheme()" title="Toggle Dark / Light Theme" aria-label="Toggle Dark or Light Theme">
+            <i data-lucide="moon"></i>
+          </button>
+
+          <!-- Notification Bell Dropdown -->
+          <div style="position: relative;">
+            <button id="notif-bell-btn" class="icon-btn" onclick="toggleNotifDropdown()" title="Notifications" aria-label="Notifications Alerts">
+              <i data-lucide="bell"></i>
+              <span id="notif-unread-count" class="badge-counter" style="display: none;">0</span>
+            </button>
+
+            <!-- Notifications Dropdown Panel -->
+            <div id="notif-dropdown" style="display: none; position: absolute; right: 0; top: 46px; width: 340px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-xl); z-index: var(--z-dropdown);">
+              <div style="padding: 0.85rem 1rem; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 0.88rem;">Notifications</strong>
+                <button onclick="markAllNotificationsRead()" style="background: none; border: none; color: var(--color-accent); font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+                  Mark all read
+                </button>
+              </div>
+              <div id="notif-dropdown-list" style="max-height: 320px; overflow-y: auto;">
+                <div style="padding: 1rem; text-align: center; color: var(--color-text-muted); font-size: 0.82rem;">
+                  Loading alerts...
+                </div>
+              </div>
+              <a href="{{ url_for('dashboards.notification_center') }}" style="display: block; text-align: center; padding: 0.65rem; font-size: 0.8rem; font-weight: 600; color: var(--color-accent); border-top: 1px solid var(--color-border); text-decoration: none;">
+                View All Notifications &rarr;
+              </a>
+            </div>
+          </div>
+
+          <!-- User Profile Menu -->
+          <div class="user-menu-btn" onclick="openModal('user-profile-modal')">
+            <div class="user-avatar" style="width: 24px; height: 24px; font-size: 0.7rem;">
+              {{ current_user.full_name[:2]|upper }}
+            </div>
+            <span style="font-size: 0.82rem; font-weight: 600; color: var(--color-text);">
+              {{ current_user.full_name.split()[0] }}
+            </span>
+            <i data-lucide="chevron-down" style="width: 13px; height: 13px; color: var(--color-text-muted);"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- FLASH MESSAGES -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div style="padding: var(--space-4) var(--space-6) 0;">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
+                <i data-lucide="info" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+                <div style="flex: 1;">{{ message }}</div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; color: inherit; font-size: 1.25rem; line-height: 1;">&times;</button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- DASHBOARD WORKSPACE -->
+      <main class="content-area fade-in">
+        {% block content %}{% endblock %}
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Tab Navigation (Visible <= 768px) -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+    {% if current_user.role == 'government' %}
+      <a href="{{ url_for('dashboards.government_dashboard') }}" class="mobile-nav-item active">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Overview</span>
+      </a>
+      <a href="#approvals-section" class="mobile-nav-item">
+        <i data-lucide="user-check"></i>
+        <span>Clearances</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openGlobalSearch()" class="mobile-nav-item">
+        <i data-lucide="search"></i>
+        <span>Search</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% elif current_user.role == 'registrar' %}
+      <a href="{{ url_for('dashboards.registrar_dashboard') }}" class="mobile-nav-item active">
+        <i data-lucide="layout-dashboard"></i>
+        <span>Overview</span>
+      </a>
+      <a href="#scrutiny-section" class="mobile-nav-item">
+        <i data-lucide="file-search"></i>
+        <span>Scrutiny</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openGlobalSearch()" class="mobile-nav-item">
+        <i data-lucide="search"></i>
+        <span>Search</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% elif current_user.role == 'judge' %}
+      <a href="{{ url_for('dashboards.judge_dashboard') }}" class="mobile-nav-item active">
+        <i data-lucide="gavel"></i>
+        <span>Bench</span>
+      </a>
+      <a href="#calendar-section" class="mobile-nav-item">
+        <i data-lucide="calendar"></i>
+        <span>Calendar</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openGlobalSearch()" class="mobile-nav-item">
+        <i data-lucide="search"></i>
+        <span>Search</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% elif current_user.role == 'clerk' %}
+      <a href="{{ url_for('dashboards.clerk_dashboard') }}" class="mobile-nav-item active">
+        <i data-lucide="monitor"></i>
+        <span>Calling</span>
+      </a>
+      <a href="#register-wizard-section" class="mobile-nav-item">
+        <i data-lucide="plus-circle"></i>
+        <span>Intake</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openGlobalSearch()" class="mobile-nav-item">
+        <i data-lucide="search"></i>
+        <span>Search</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% elif current_user.role == 'lawyer' %}
+      <a href="{{ url_for('dashboards.lawyer_dashboard') }}" class="mobile-nav-item active">
+        <i data-lucide="briefcase"></i>
+        <span>Briefs</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('efile-modal')" class="mobile-nav-item">
+        <i data-lucide="file-plus-2"></i>
+        <span>E-File</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openGlobalSearch()" class="mobile-nav-item">
+        <i data-lucide="search"></i>
+        <span>Search</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% elif current_user.role == 'litigant' %}
+      <a href="{{ url_for('dashboards.litigant_dashboard') }}" class="mobile-nav-item active">
+        <i data-lucide="scale"></i>
+        <span>Cases</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openPaymentModal(1, 500, 'Statutory Fee')" class="mobile-nav-item">
+        <i data-lucide="credit-card"></i>
+        <span>Pay Fee</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openDrawer('ai-chat-drawer')" class="mobile-nav-item">
+        <i data-lucide="sparkles"></i>
+        <span>AI Help</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% elif current_user.role == 'police' %}
+      <a href="{{ url_for('dashboards.police_dashboard') }}" class="mobile-nav-item active">
+        <i data-lucide="shield"></i>
+        <span>Trials</span>
+      </a>
+      <a href="#bail-tracker-section" class="mobile-nav-item">
+        <i data-lucide="clock"></i>
+        <span>Remand</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openGlobalSearch()" class="mobile-nav-item">
+        <i data-lucide="search"></i>
+        <span>Search</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% else %}
+      <a href="{{ url_for('main.index') }}" class="mobile-nav-item active">
+        <i data-lucide="home"></i>
+        <span>Home</span>
+      </a>
+      <a href="{{ url_for('dashboards.notification_center') }}" class="mobile-nav-item">
+        <i data-lucide="bell"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="javascript:void(0)" onclick="openModal('user-profile-modal')" class="mobile-nav-item">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
+      </a>
+    {% endif %}
+  </nav>
+
+  <!-- =========================================================================
+       GLOBAL MODALS & DRAWERS
+       ========================================================================= -->
+
+  <!-- 1. Global Case Search Modal -->
+  <div id="global-search-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 640px; padding: var(--space-4);">
+      <div style="display: flex; align-items: center; gap: var(--space-3); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3); margin-bottom: var(--space-3);">
+        <i data-lucide="search" style="color: var(--color-accent); width: 20px; height: 20px;"></i>
+        <input type="text" id="global-search-modal-input" class="form-control" style="border: none; box-shadow: none; font-size: 1rem; padding: 0;" 
+               placeholder="Search by Case No (CIV/2026/00010), Party Name, or Keywords..." 
+               oninput="handleGlobalSearch(this.value)">
+        <button onclick="closeModal('global-search-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <div id="global-search-results" style="max-height: 400px; overflow-y: auto;">
+        <div style="padding: 2rem; text-align: center; color: var(--color-text-muted); font-size: 0.85rem;">
+          Type case number, petitioner/respondent name, or legal statute above...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Case Details Docket Drawer -->
+  <div id="case-detail-drawer" class="drawer-overlay">
+    <div class="drawer">
+      <div class="drawer-header">
+        <div>
+          <div id="drawer-case-type-badge" class="badge badge-primary">CIVIL</div>
+          <h3 id="drawer-case-number" class="heading-serif" style="font-size: 1.25rem; margin-top: 0.25rem;">CASE DOCKET</h3>
+        </div>
+        <button onclick="closeDrawer('case-detail-drawer')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <div class="drawer-body" id="drawer-case-body">
+        <div style="text-align: center; padding: 2rem; color: var(--color-text-muted);">Loading case details...</div>
+      </div>
+
+      <div class="drawer-footer">
+        <button class="btn btn-secondary" onclick="closeDrawer('case-detail-drawer')">Close Docket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. User Profile Modal -->
+  <div id="user-profile-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+          <div class="user-avatar" style="background-color: {{ current_user.avatar_color or 'var(--color-primary)' }}; width: 36px; height: 36px; font-size: 0.85rem; color: #FFF; font-weight: 700;">
+            {{ current_user.full_name[:2]|upper }}
+          </div>
+          <div>
+            <h3 class="card-title" style="font-size: 1.15rem; font-weight: 700; color: var(--color-text);">Judicial Profile & Settings</h3>
+            <span class="badge badge-primary" style="font-size: 0.65rem; margin-top: 2px;">{{ current_user.role|upper }} &bull; BENCH CLEARED</span>
+          </div>
+        </div>
+        <button onclick="closeModal('user-profile-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <form id="profile-form" onsubmit="saveProfile(event)" class="modal-body" style="padding: var(--space-6);">
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label">Full Legal Name</label>
+            <input type="text" class="form-control" value="{{ current_user.full_name }}" readonly style="background: var(--color-surface-subtle); color: var(--color-text-muted); cursor: not-allowed;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Official Email</label>
+            <input type="email" class="form-control" value="{{ current_user.email }}" readonly style="background: var(--color-surface-subtle); color: var(--color-text-muted); cursor: not-allowed; font-family: var(--font-mono); font-size: 0.82rem;">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label" for="profile-phone">Contact Mobile</label>
+            <input type="text" id="profile-phone" class="form-control" value="{{ current_user.phone }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="profile-lang">Docket Language</label>
+            <select id="profile-lang" class="form-control">
+              <option value="en" {% if current_user.language_pref == 'en' %}selected{% endif %}>English (Official)</option>
+              <option value="te" {% if current_user.language_pref == 'te' %}selected{% endif %}>Telugu (తెలుగు)</option>
+              <option value="hi" {% if current_user.language_pref == 'hi' %}selected{% endif %}>Hindi (हिंदी)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); background: var(--color-surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: var(--space-2); font-size: 0.82rem; color: var(--color-text-secondary);">
+            <i data-lucide="bell" style="width: 15px; height: 15px; color: var(--color-accent);"></i>
+            <span>Notification & Dispatch Rules</span>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeModal('user-profile-modal'); openNotificationPrefsModal();" style="font-size: 0.72rem; padding: 2px 8px;">
+            Configure Channels &rarr;
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="profile-new-pwd">Change Password (Optional)</label>
+          <input type="password" id="profile-new-pwd" class="form-control" placeholder="Leave blank to keep unchanged">
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('user-profile-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Profile Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Notification Preferences Modal -->
+  <div id="modal-notification-prefs" class="modal-overlay">
+    <div class="modal-box" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="bell-ring" style="color:var(--color-accent); width:18px; height:18px;"></i> Alert & Language Preferences
+        </h3>
+        <button onclick="closeModal('modal-notification-prefs')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <form id="notif-prefs-form" onsubmit="saveNotificationPrefs(event)" class="modal-body">
+        <div style="font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: var(--space-3);">
+          Configure delivery channels, localized template language, and designated quiet hours.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Template Language Preference</label>
+          <select id="pref-language" class="form-control">
+            <option value="en">English (Official Judicial Docket)</option>
+            <option value="te">Telugu (తెలుగు న్యాయ నోటీసులు)</option>
+            <option value="hi">Hindi (हिन्दी अदालती सूचना)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Enabled Channels</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); background: var(--color-surface-subtle); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+              <input type="checkbox" id="pref-sms" style="accent-color: var(--color-accent);" checked>
+              📱 SMS Gateway
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+              <input type="checkbox" id="pref-whatsapp" style="accent-color: var(--color-accent);" checked>
+              💬 WhatsApp
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+              <input type="checkbox" id="pref-email" style="accent-color: var(--color-accent);" checked>
+              ✉️ Official Email
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+              <input type="checkbox" id="pref-inapp" style="accent-color: var(--color-accent);" checked>
+              🔔 In-App Alerts
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" style="border-top: 1px solid var(--color-border); padding-top: var(--space-3);">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-bottom: 0.5rem;">
+            <input type="checkbox" id="pref-quiet-enabled" style="accent-color: var(--color-accent);" onchange="toggleQuietHoursFields()">
+            🌙 Quiet Hours (Silence Non-Emergency Alerts)
+          </label>
+          <div id="quiet-hours-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: 0.5rem;">
+            <div>
+              <label class="form-label" style="font-size: 0.78rem;">Start Time</label>
+              <input type="time" id="pref-quiet-start" class="form-control" value="22:00">
+            </div>
+            <div>
+              <label class="form-label" style="font-size: 0.78rem;">End Time</label>
+              <input type="time" id="pref-quiet-end" class="form-control" value="07:00">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: var(--space-4) 0 0; background: transparent; border-top: 1px solid var(--color-border); margin-top: var(--space-4);">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-notification-prefs')">Cancel</button>
+          <button type="submit" class="btn btn-accent">Save Preferences</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Shared Scripts -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    // Profile save handler
+    async function saveProfile(e) {
+      e.preventDefault();
+      const phone = document.getElementById('profile-phone').value;
+      const lang = document.getElementById('profile-lang').value;
+      const pwd = document.getElementById('profile-new-pwd').value;
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, language_pref: lang, new_password: pwd || null })
+        });
+        if (res.ok) {
+          showToast('Profile updated successfully!', 'success');
+          closeModal('user-profile-modal');
+        } else {
+          showToast('Failed to update profile.', 'danger');
+        }
+      } catch (err) {
+        showToast('Error saving profile.', 'danger');
+      }
+    }
+
+    // Helper to open case docket drawer
+    async function openCaseDrawer(caseId) {
+      openDrawer('case-detail-drawer');
+      const body = document.getElementById('drawer-case-body');
+      body.innerHTML = '<div style="text-align: center; padding: 2rem;">Loading docket...</div>';
+
+      try {
+        const res = await fetch(`/api/judge/cases/${caseId}`);
+        if (res.ok) {
+          const c = await res.json();
+          document.getElementById('drawer-case-number').textContent = c.case_number;
+          document.getElementById('drawer-case-type-badge').textContent = c.case_type.toUpperCase();
+
+          body.innerHTML = `
+            <div style="margin-bottom: 1.25rem;">
+              <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                <span class="badge ${c.priority_analysis ? c.priority_analysis.badge_class : 'badge-primary'}" title="Actuarial priority computed from case age, type, and urgency">
+                  <i data-lucide="flame" style="width: 12px; height: 12px;"></i> Priority: ${c.priority_analysis ? c.priority_analysis.score : 20}/100 (${c.priority_analysis ? c.priority_analysis.label : 'Normal'})
+                </span>
+                <span class="badge ${c.delay_risk ? c.delay_risk.badge_class : 'badge-success'}" title="${c.delay_risk ? c.delay_risk.reason : 'Low risk'}">
+                  <i data-lucide="clock" style="width: 12px; height: 12px;"></i> ${c.delay_risk ? c.delay_risk.risk_level : 'Low Risk'}
+                </span>
+                <button class="btn btn-accent btn-sm" onclick="generateCaseBriefDrawer(${c.id})" style="margin-left: auto; font-size: 0.75rem; padding: 3px 10px;">
+                  <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i> Generate AI Case Brief
+                </button>
+              </div>
+              <h4 style="font-size: 1.15rem; margin-bottom: 0.35rem;">${c.title}</h4>
+              <p style="font-size: 0.85rem; color: var(--color-text-muted);">${c.description || 'No summary recorded.'}</p>
+            </div>
+
+            <!-- AI Assist Briefing Container (Hidden until generated) -->
+            <div id="drawer-ai-brief-panel" style="display: none; margin-bottom: 1.25rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); overflow: hidden; box-shadow: var(--shadow-sm);">
+              <div style="padding: 0.6rem 0.85rem; background: var(--color-surface-subtle); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.82rem; font-weight: 700; color: var(--color-text); display: flex; align-items: center; gap: 0.4rem;">
+                  <i data-lucide="sparkles" style="width: 14px; height: 14px; color: var(--color-accent);"></i> AI Judicial Case Brief
+                  <span id="drawer-ai-mode-pill" class="badge badge-accent" style="font-size: 0.65rem; padding: 1px 6px;">DEMO MODE</span>
+                  <span class="badge badge-neutral" style="font-size: 0.65rem;">AI-generated, review before use</span>
+                </div>
+                <div style="display: flex; gap: 0.35rem;">
+                  <button class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;" onclick="copyAiBriefText()" title="Copy Brief">
+                    <i data-lucide="copy" style="width: 12px; height: 12px;"></i> Copy
+                  </button>
+                  <button class="btn btn-ghost btn-sm" style="padding: 2px 6px; font-size: 0.72rem;" onclick="generateCaseBriefDrawer(${c.id})" title="Regenerate Brief">
+                    <i data-lucide="rotate-cw" style="width: 12px; height: 12px;"></i>
+                  </button>
+                </div>
+              </div>
+              <div id="drawer-ai-brief-content" style="padding: 1rem; font-size: 0.85rem; line-height: 1.6; max-height: 350px; overflow-y: auto;">
+                Loading...
+              </div>
+            </div>
+
+            <div style="background: var(--color-surface-subtle); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-bottom: 1.25rem; font-size: 0.82rem;">
+              <div><strong>Court:</strong> ${c.court}</div>
+              <div><strong>Presiding Judge:</strong> ${c.judge}</div>
+              <div><strong>Status:</strong> <span class="badge badge-info">${c.status}</span></div>
+              <div><strong>Next Hearing:</strong> <strong>${c.next_hearing_date || 'Awaiting Schedule'}</strong></div>
+              <div style="margin-top: 4px; color: var(--color-text-muted);"><em>${c.delay_risk ? c.delay_risk.reason : ''}</em></div>
+            </div>
+
+            <!-- Top 3 Similar Cases (TF-IDF Cosine Similarity) -->
+            ${c.similar_cases && c.similar_cases.length ? `
+              <h5 style="font-size: 0.85rem; margin-bottom: 0.4rem; text-transform: uppercase; display: flex; align-items: center; gap: 0.35rem; color: var(--color-accent);">
+                <i data-lucide="git-merge" style="width: 14px; height: 14px;"></i> Top Similar Precedent Matters (AI TF-IDF)
+              </h5>
+              <div style="margin-bottom: 1.25rem;">
+                ${c.similar_cases.map(sc => `
+                  <div style="padding: 0.5rem 0.65rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); margin-bottom: 0.4rem; background: var(--color-surface); display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="openCaseDrawer(${sc.case_id})">
+                    <div>
+                      <div style="font-weight: 700; font-size: 0.82rem;">${sc.case_number} &bull; ${sc.title}</div>
+                      <div style="font-size: 0.72rem; color: var(--color-text-muted);">${sc.case_type} &bull; ${sc.status} &bull; ${sc.court}</div>
+                    </div>
+                    <span class="badge badge-accent" style="font-size: 0.7rem; font-weight: 700;">${sc.similarity}% Match</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            <h5 style="font-size: 0.88rem; margin-bottom: 0.5rem; text-transform: uppercase;">Parties on Record</h5>
+            <div style="margin-bottom: 1.25rem;">
+              ${c.parties.map(p => `
+                <div style="padding: 0.4rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.85rem; display: flex; justify-content: space-between;">
+                  <span><strong>${p.name}</strong> (${p.type})</span>
+                  <span style="color: var(--color-text-muted);">Adv. ${p.advocate}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            <h5 style="font-size: 0.88rem; margin-bottom: 0.5rem; text-transform: uppercase;">Recent Orders</h5>
+            <div>
+              ${c.orders.length ? c.orders.map(o => `
+                <div style="padding: 0.6rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); margin-bottom: 0.5rem; font-size: 0.82rem; background: var(--color-surface);">
+                  <div style="font-weight: 700;">${o.title} (${o.type})</div>
+                  <div style="color: var(--color-text-muted); font-size: 0.75rem;">Issued: ${o.issued_at} &bull; Code: <code>${o.verification_code}</code></div>
+                  <div style="margin-top: 0.35rem; color: var(--color-text);">${o.content}</div>
+                </div>
+              `).join('') : '<div style="font-size: 0.8rem; color: var(--color-text-muted);">No orders published yet.</div>'}
+            </div>
+          `;
+          if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+          }
+        }
+      } catch (err) {
+        body.innerHTML = '<div style="color: var(--color-danger); padding: 1rem;">Failed to load case docket.</div>';
+      }
+    }
+
+    // AI Case Brief Generator
+    async function generateCaseBriefDrawer(caseId) {
+      const panel = document.getElementById('drawer-ai-brief-panel');
+      const content = document.getElementById('drawer-ai-brief-content');
+      const modePill = document.getElementById('drawer-ai-mode-pill');
+      if (!panel || !content) return;
+
+      panel.style.display = 'block';
+      content.innerHTML = `
+        <div style="text-align: center; padding: 1.5rem; color: var(--color-accent);">
+          <i data-lucide="sparkles" class="spin" style="width: 24px; height: 24px; margin-bottom: 0.5rem;"></i>
+          <div style="font-weight: 600;">Synthesizing judicial facts, timeline, issues & next steps...</div>
+        </div>
+      `;
+      if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+
+      try {
+        const res = await fetch(`/api/ai/summary/${caseId}`);
+        const data = await res.json();
+        if (modePill) {
+          modePill.textContent = data.mode === 'live' ? 'LIVE GEMINI' : 'DEMO MODE';
+          modePill.className = data.mode === 'live' ? 'badge badge-success' : 'badge badge-accent';
+        }
+
+        // Render markdown headings and bullet points
+        let formatted = (data.summary || '')
+          .replace(/### (.*?)\n/g, '<h5 style="color:var(--color-accent); margin:0.8rem 0 0.3rem 0; font-size:0.95rem;">$1</h5>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/`([^`]+)`/g, '<code style="font-size:0.78rem;">$1</code>')
+          .replace(/\n\n/g, '<p style="margin:0 0 0.5rem 0;"></p>')
+          .replace(/\n- /g, '<br>&bull; ')
+          .replace(/\n(\d+\.) /g, '<br><strong>$1</strong> ');
+
+        content.innerHTML = formatted;
+        window._lastAiBrief = data.summary;
+      } catch (err) {
+        content.innerHTML = '<div style="color: var(--color-danger);">Failed to synthesize AI case brief.</div>';
+      }
+    }
+
+    function copyAiBriefText() {
+      if (window._lastAiBrief) {
+        navigator.clipboard.writeText(window._lastAiBrief).then(() => {
+          showToast('AI Case Brief copied to clipboard!', 'success');
+        });
+      }
+    }
+  </script>
+
+  <!-- Floating NyayaMitra AI Legal Help Widget -->
+  {% include "components/ai_chatbot.html" %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

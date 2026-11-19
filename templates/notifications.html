@@ -1,0 +1,280 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Notification Center & Communications - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+
+  <!-- 1. PAGE HEADER (Linear / Stripe Style) -->
+  <div class="dashboard-page-header">
+    <div class="header-left">
+      <div class="header-eyebrow">
+        <span class="role-chip" style="background: rgba(37, 99, 235, 0.12); color: var(--color-info);">
+          <i data-lucide="bell" style="width: 12px; height: 12px;"></i> Judicial Communications Hub
+        </span>
+        <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
+          <span class="status-indicator live"></span> Telephony & In-App Multi-Channel Dispatcher
+        </span>
+      </div>
+      <h1 class="page-title">Notification Center & Alerts Docket</h1>
+      <p class="page-subtitle">
+        Official judicial alerts, cause list notifications, certified orders, hearing reminders, and summons dispatch logs.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="fetchNotifications()" title="Refresh alerts">
+        <i data-lucide="rotate-cw"></i> Refresh
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="markAllRead()">
+        <i data-lucide="check-check"></i> Mark All as Read
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. KPI METRICS ROW -->
+  <div class="kpi-grid" style="margin-bottom: var(--space-6);">
+    <!-- KPI 1 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Total Notifications</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="inbox" style="width: 12px; height: 12px;"></i> Ledger
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-total" class="kpi-number" data-count="0">0</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 14L26 15L38 10L50 8L62 4" stroke="var(--color-primary-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Audit logged judicial alerts</div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Unread Alerts</span>
+        <span class="kpi-delta negative">
+          <i data-lucide="bell-ring" style="width: 12px; height: 12px;"></i> Active
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-unread" class="kpi-number" style="color: var(--color-warning);" data-count="0">0</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 14L14 16L26 11L38 18L50 12L62 6" stroke="var(--color-warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Awaiting citizen acknowledgment</div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Mobile Dispatches</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="smartphone" style="width: 12px; height: 12px;"></i> Gateways
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-sms" class="kpi-number" style="color: var(--color-accent);" data-count="0">0</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 16L14 13L26 14L38 9L50 11L62 3" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">SMS & WhatsApp transmissions</div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Delivered Successfully</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check" style="width: 12px; height: 12px;"></i> 100%
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div id="stat-delivered" class="kpi-number" style="color: var(--color-success);" data-count="0">0</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 15L26 12L38 10L50 6L62 2" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Zero dropped packet rate</div>
+    </div>
+  </div>
+
+  <!-- 3. INBOX STREAM & FILTER TOOLBAR -->
+  <div class="card" style="margin-bottom: var(--space-8); padding: 0; overflow: hidden; border: 1px solid var(--color-border);">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div>
+          <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Judicial Alerts Docket</h3>
+          <span id="notif-count-label" class="card-subtitle" style="font-size: 0.78rem;">Showing 0 notifications</span>
+        </div>
+        <div class="filter-chips">
+          <button class="filter-chip-btn filter-ch-btn active" data-channel="All" onclick="setChannelFilter('All', this)">All Channels</button>
+          <button class="filter-chip-btn filter-ch-btn" data-channel="SMS" onclick="setChannelFilter('SMS', this)">📱 SMS</button>
+          <button class="filter-chip-btn filter-ch-btn" data-channel="WhatsApp" onclick="setChannelFilter('WhatsApp', this)">💬 WhatsApp</button>
+          <button class="filter-chip-btn filter-ch-btn" data-channel="Email" onclick="setChannelFilter('Email', this)">✉️ Email</button>
+          <button class="filter-chip-btn filter-ch-btn" data-channel="In-App" onclick="setChannelFilter('In-App', this)">🔔 In-App</button>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <select id="status-filter" class="form-control" style="width: 140px; padding: 0.35rem 0.6rem; font-size: 0.8rem;" onchange="fetchNotifications()">
+          <option value="All">All Statuses</option>
+          <option value="Sent">Sent (Unread)</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Queued">Queued</option>
+          <option value="Failed">Failed</option>
+        </select>
+
+        <div class="search-input-wrapper">
+          <i data-lucide="search"></i>
+          <input type="text" id="notif-search-input" class="form-control" placeholder="Search message text..." oninput="debounceSearch()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications List Container -->
+    <div id="notifications-list" style="min-height: 260px;">
+      <div style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+        <i data-lucide="loader" class="spin" style="width: 28px; height: 28px; margin-bottom: 0.5rem; color: var(--color-accent);"></i>
+        <div>Retrieving judicial communications...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentChannel = 'All';
+let searchDebounceTimeout = null;
+
+function setChannelFilter(channel, btn) {
+  currentChannel = channel;
+  document.querySelectorAll('.filter-ch-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  fetchNotifications();
+}
+
+function debounceSearch() {
+  clearTimeout(searchDebounceTimeout);
+  searchDebounceTimeout = setTimeout(fetchNotifications, 300);
+}
+
+async function fetchNotifications() {
+  const status = document.getElementById('status-filter').value;
+  const q = document.getElementById('notif-search-input').value.trim();
+  const listEl = document.getElementById('notifications-list');
+
+  let url = `/api/notifications?channel=${encodeURIComponent(currentChannel)}&status=${encodeURIComponent(status)}&limit=100`;
+  if (q) url += `&q=${encodeURIComponent(q)}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    const notifs = data.notifications || [];
+
+    // Update Stats
+    document.getElementById('stat-total').textContent = notifs.length;
+    document.getElementById('stat-unread').textContent = data.unread_count || 0;
+    document.getElementById('stat-sms').textContent = notifs.filter(n => n.channel === 'SMS' || n.channel === 'WhatsApp').length;
+    document.getElementById('stat-delivered').textContent = notifs.filter(n => n.status === 'Delivered').length;
+    document.getElementById('notif-count-label').textContent = `Showing ${notifs.length} messages`;
+
+    if (notifs.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align: center; padding: 4rem 2rem; color: var(--color-text-muted);">
+          <i data-lucide="inbox" style="width: 44px; height: 44px; stroke-width: 1.2; margin-bottom: 0.75rem; color: var(--color-text-muted);"></i>
+          <h4 style="font-size: 1.05rem; color: var(--color-text); margin-bottom: 0.25rem; font-weight: 700;">No Notifications Found</h4>
+          <p style="font-size: 0.85rem; max-width: 400px; margin: 0 auto;">No alerts matching your current channel or status filters were found in your judicial docket.</p>
+        </div>
+      `;
+    } else {
+      listEl.innerHTML = notifs.map(n => {
+        const channelIcons = {
+          'SMS': '📱 SMS',
+          'WhatsApp': '💬 WhatsApp',
+          'Email': '✉️ Email',
+          'In-App': '🔔 In-App'
+        };
+
+        const statusBadges = {
+          'Delivered': 'badge-success',
+          'Sent': 'badge-warning',
+          'Queued': 'badge-primary',
+          'Failed': 'badge-danger'
+        };
+
+        const channelBadgeClasses = {
+          'SMS': 'badge-accent',
+          'WhatsApp': 'badge-success',
+          'Email': 'badge-info',
+          'In-App': 'badge-primary'
+        };
+
+        return `
+          <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--color-border); display: flex; gap: 1rem; align-items: flex-start; transition: background 0.15s ease;" onmouseover="this.style.background='var(--color-surface-subtle)'" onmouseout="this.style.background='transparent'">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${n.status === 'Sent' ? 'var(--color-accent)' : 'var(--color-border)'}; margin-top: 7px; flex-shrink: 0;" title="${n.status}"></div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="badge ${channelBadgeClasses[n.channel] || 'badge-primary'}" style="font-size: 0.72rem;">${channelIcons[n.channel] || n.channel}</span>
+                  <span class="badge ${statusBadges[n.status] || 'badge-primary'}" style="font-size: 0.72rem;">${n.status}</span>
+                  ${n.fallback_from ? `<span class="badge badge-warning" style="font-size: 0.68rem;">Fallback from ${n.fallback_from}</span>` : ''}
+                  ${n.reminder_type ? `<span class="badge badge-outline" style="font-size: 0.68rem;">Milestone: ${n.reminder_type}</span>` : ''}
+                </div>
+                <div style="font-size: 0.76rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 4px;">
+                  <i data-lucide="clock" style="width: 12px; height: 12px;"></i> ${n.sent_at}
+                </div>
+              </div>
+              <div style="font-size: 0.88rem; line-height: 1.5; color: var(--color-text); white-space: pre-line; margin-bottom: 0.4rem;">${n.message}</div>
+              <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 1rem; flex-wrap: wrap;">
+                <span>Recipient: <strong>${n.recipient_contact}</strong></span>
+                <span>Gateway: <code>${n.provider}</code></span>
+                ${n.related_case_number ? `<span>Case Docket: <strong>${n.related_case_number}</strong></span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  } catch (err) {
+    listEl.innerHTML = '<div style="color: var(--color-danger); text-align: center; padding: 2rem;">Error loading notifications.</div>';
+  }
+}
+
+async function markAllRead() {
+  try {
+    const res = await fetch('/api/notifications/mark-read', { method: 'POST' });
+    if (res.ok) {
+      showToast('All notifications marked as read', 'success');
+      fetchNotifications();
+      if (typeof loadNotifications === 'function') loadNotifications();
+    }
+  } catch (err) {
+    showToast('Failed to mark notifications read', 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initStatCountUp === 'function') initStatCountUp();
+  fetchNotifications();
+});
+</script>
+{% endblock %}

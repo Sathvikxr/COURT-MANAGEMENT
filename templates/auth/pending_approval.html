@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Application Verification Status - NyayaDesk{% endblock %}
+
+{% block styles %}
+<style>
+.pending-container {
+  max-width: 760px;
+  margin: var(--space-8) auto;
+  padding: 0 var(--space-4);
+}
+
+.status-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-8);
+  position: relative;
+  overflow: hidden;
+}
+
+.status-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: {% if user.status == 'rejected' %}var(--color-danger){% elif user.status == 'active' %}var(--color-success){% else %}var(--color-accent){% endif %};
+}
+
+.ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.05em;
+}
+
+.status-stepper-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  margin: var(--space-8) 0;
+}
+
+.status-stepper-h::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 36px;
+  right: 36px;
+  height: 2px;
+  background: var(--color-border);
+  z-index: 1;
+}
+
+.stepper-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.stepper-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.stepper-step.completed .stepper-icon-circle {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #FFFFFF;
+}
+
+.stepper-step.active .stepper-icon-circle {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #0B1F3A;
+  box-shadow: 0 0 0 4px rgba(201, 162, 75, 0.2);
+}
+
+.stepper-step.rejected .stepper-icon-circle {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #FFFFFF;
+}
+
+.stepper-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stepper-step.active .stepper-label {
+  color: var(--color-text);
+  font-weight: 700;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pending-container">
+
+  <div class="status-card fade-in">
+    
+    <!-- Top Emblem and Title -->
+    <div style="text-align: center; padding-bottom: var(--space-6); border-bottom: 1px solid var(--color-border);">
+      
+      <div style="width: 56px; height: 56px; border-radius: 50%; margin: 0 auto var(--space-3) auto; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700;
+        background: {% if user.status == 'rejected' %}rgba(239, 68, 68, 0.15); color: var(--color-danger); border: 2px solid var(--color-danger);{% elif user.status == 'active' %}rgba(16, 185, 129, 0.15); color: var(--color-success); border: 2px solid var(--color-success);{% else %}rgba(201, 162, 75, 0.15); color: var(--color-accent); border: 2px solid var(--color-accent);{% endif %}">
+        {% if user.status == 'rejected' %}
+          <i data-lucide="x" style="width: 28px; height: 28px;"></i>
+        {% elif user.status == 'active' %}
+          <i data-lucide="check" style="width: 28px; height: 28px;"></i>
+        {% else %}
+          <i data-lucide="clock" style="width: 28px; height: 28px;"></i>
+        {% endif %}
+      </div>
+
+      {% if user.status == 'pending_gov' %}
+        <span class="badge badge-warning" style="font-size: 0.75rem; letter-spacing: 0.05em; margin-bottom: var(--space-2);">
+          <span class="pulse-dot"></span> PENDING GOVERNMENT SCRUTINY
+        </span>
+        <h2 class="heading-serif" style="font-size: 1.85rem; color: var(--color-text); margin-bottom: var(--space-2);">
+          Dossier Dispatched to Ministry for Verification
+        </h2>
+        <p style="font-size: 0.9rem; color: var(--color-text-muted); max-width: 560px; margin: 0 auto;">
+          In accordance with the Judicial Governance Act, judicial appointments for <strong>{{ user.role.capitalize() }}</strong> require digital verification by the Ministry of Law & Judicial Secretariat.
+        </p>
+      {% elif user.status == 'pending_registrar' %}
+        <span class="badge badge-warning" style="font-size: 0.75rem; letter-spacing: 0.05em; margin-bottom: var(--space-2);">
+          <span class="pulse-dot"></span> PENDING REGISTRAR VERIFICATION
+        </span>
+        <h2 class="heading-serif" style="font-size: 1.85rem; color: var(--color-text); margin-bottom: var(--space-2);">
+          Application Under Registry Scrutiny
+        </h2>
+        <p style="font-size: 0.9rem; color: var(--color-text-muted); max-width: 560px; margin: 0 auto;">
+          Your court staff credentials have been routed to the Registrar General for roster validation.
+        </p>
+      {% elif user.status == 'rejected' %}
+        <span class="badge badge-danger" style="font-size: 0.75rem; letter-spacing: 0.05em; margin-bottom: var(--space-2);">
+          APPLICATION DECLINED
+        </span>
+        <h2 class="heading-serif" style="font-size: 1.85rem; color: var(--color-danger); margin-bottom: var(--space-2);">
+          Judicial Application Returned
+        </h2>
+        <p style="font-size: 0.9rem; color: var(--color-text-muted); max-width: 560px; margin: 0 auto;">
+          The reviewing judicial authority has returned your application with official remarks for correction.
+        </p>
+      {% elif user.status == 'active' %}
+        <span class="badge badge-success" style="font-size: 0.75rem; letter-spacing: 0.05em; margin-bottom: var(--space-2);">
+          CREDENTIALS VERIFIED
+        </span>
+        <h2 class="heading-serif" style="font-size: 1.85rem; color: var(--color-success); margin-bottom: var(--space-2);">
+          Bench Credentials Activated
+        </h2>
+        <p style="font-size: 0.9rem; color: var(--color-text-muted); max-width: 560px; margin: 0 auto;">
+          Your credentials have been authenticated. You can proceed directly to your official judicial chamber.
+        </p>
+      {% endif %}
+
+    </div>
+
+    <!-- Tracking Reference Card -->
+    <div style="background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-5); margin: var(--space-6) 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+        <div>
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px;">
+            Application Tracking Reference No.
+          </div>
+          <div class="ref-chip">
+            <span id="ref-no-text">NYAYA-REQ-2026-{{ "%05d"|format(request_obj.id if request_obj else user.id) }}</span>
+            <button type="button" onclick="copyRef()" style="background: none; border: none; cursor: pointer; color: var(--color-text-muted); padding: 2px;" title="Copy Reference ID">
+              <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px; text-align: right;">
+            Current Lifecycle State
+          </div>
+          <div style="text-align: right;">
+            {% if user.status in ['pending_gov', 'pending_registrar'] %}
+              <span class="badge badge-warning" style="font-size: 0.8rem;">
+                <span class="pulse-dot"></span> Under Scrutiny
+              </span>
+            {% elif user.status == 'rejected' %}
+              <span class="badge badge-danger" style="font-size: 0.8rem;">Declined / Returned</span>
+            {% elif user.status == 'active' %}
+              <span class="badge badge-success" style="font-size: 0.8rem;">Cleared & Active</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejection Remarks (If Rejected) -->
+    {% if user.status == 'rejected' %}
+      <div class="alert alert-danger" style="flex-direction: column; align-items: flex-start; margin-bottom: var(--space-6);">
+        <div style="display: flex; align-items: center; gap: var(--space-2); font-weight: 700;">
+          <i data-lucide="alert-octagon"></i> Rejection Reason / Official Scrutiny Remarks:
+        </div>
+        <div style="margin-top: var(--space-2); font-size: 0.92rem; color: #7F1D1D; padding-left: 1.7rem; line-height: 1.5;">
+          {{ request_obj.remarks if request_obj and request_obj.remarks else (user.rejection_reason or "Credentials or service appointment records could not be verified.") }}
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-bottom: var(--space-6);">
+        <form method="POST" action="{{ url_for('auth.reapply') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-weight: 600;">
+            <i data-lucide="refresh-cw"></i> Resubmit / Re-Apply for Verification
+          </button>
+        </form>
+      </div>
+    {% endif %}
+
+    <!-- Approved Action (If Active) -->
+    {% if user.status == 'active' %}
+      <div style="text-align: center; margin: var(--space-6) 0;">
+        <a href="{{ url_for('dashboards.judge_dashboard' if user.role == 'judge' else ('dashboards.registrar_dashboard' if user.role == 'registrar' else 'dashboards.clerk_dashboard')) }}" class="btn btn-success" style="padding: 0.85rem 2rem; font-size: 1rem; font-weight: 600;">
+          <i data-lucide="arrow-right-circle"></i> Proceed to Judicial Bench Workspace &rarr;
+        </a>
+      </div>
+    {% endif %}
+
+    <!-- Visual Stepper: Submitted -> Under Review -> Decision -->
+    <div style="margin: var(--space-6) 0;">
+      <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em; margin-bottom: var(--space-2);">
+        Lifecycle Progress Progression
+      </h4>
+
+      <div class="status-stepper-h">
+        <!-- Step 1: Submitted -->
+        <div class="stepper-step completed">
+          <div class="stepper-icon-circle"><i data-lucide="check" style="width: 18px; height: 18px;"></i></div>
+          <div class="stepper-label">1. Submitted</div>
+          <div style="font-size: 0.7rem; color: var(--color-text-muted); margin-top: 2px;">
+            {{ (request_obj.created_at if request_obj else user.created_at).strftime('%d %b %Y') }}
+          </div>
+        </div>
+
+        <!-- Step 2: Under Review -->
+        <div class="stepper-step {% if user.status in ['pending_gov', 'pending_registrar'] %}active{% else %}completed{% endif %}">
+          <div class="stepper-icon-circle">
+            {% if user.status in ['pending_gov', 'pending_registrar'] %}
+              <i data-lucide="hourglass" style="width: 18px; height: 18px;"></i>
+            {% else %}
+              <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+            {% endif %}
+          </div>
+          <div class="stepper-label">2. Scrutiny</div>
+          <div style="font-size: 0.7rem; color: var(--color-text-muted); margin-top: 2px;">
+            {{ 'Ministry Oversight' if user.role in ['judge', 'registrar'] else 'Registrar Admin' }}
+          </div>
+        </div>
+
+        <!-- Step 3: Decision -->
+        <div class="stepper-step {% if user.status == 'active' %}completed{% elif user.status == 'rejected' %}rejected{% else %}{% endif %}">
+          <div class="stepper-icon-circle">
+            {% if user.status == 'active' %}
+              <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+            {% elif user.status == 'rejected' %}
+              <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+            {% else %}
+              <i data-lucide="shield" style="width: 18px; height: 18px;"></i>
+            {% endif %}
+          </div>
+          <div class="stepper-label">3. Bench Access</div>
+          <div style="font-size: 0.7rem; color: var(--color-text-muted); margin-top: 2px;">
+            {% if user.status == 'active' %}
+              Active
+            {% elif user.status == 'rejected' %}
+              Returned
+            {% else %}
+              Pending
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submitted Dossier Particulars Table -->
+    <div style="border-top: 1px solid var(--color-border); padding-top: var(--space-5);">
+      <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--space-3); text-transform: uppercase; letter-spacing: 0.04em;">
+        Applicant Dossier Records
+      </h4>
+
+      <table class="table" style="font-size: 0.85rem;">
+        <tbody>
+          <tr>
+            <td style="width: 35%; font-weight: 600; color: var(--color-text-secondary);">Applicant Name:</td>
+            <td style="font-weight: 600; color: var(--color-text);">{{ user.full_name }}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--color-text-secondary);">Official Role Requested:</td>
+            <td><span class="badge badge-primary">{{ user.role|upper }}</span></td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--color-text-secondary);">Affiliated Court:</td>
+            <td>{{ request_obj.court_name if request_obj and request_obj.court_name else (user.court.name if user.court else 'High Court of Delhi') }}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--color-text-secondary);">Employee / ID Proof:</td>
+            <td><code style="background: var(--color-surface-subtle); padding: 2px 6px; border-radius: var(--radius-xs); border: 1px solid var(--color-border);">{{ user.id_proof_no or (details.get('employee_id') if details else 'N/A') }}</code></td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--color-text-secondary);">Judicial Designation:</td>
+            <td>{{ user.designation or (details.get('designation') if details else 'Judicial Officer') }}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600; color: var(--color-text-secondary);">Contact Credentials:</td>
+            <td>{{ user.email }} &bull; {{ user.phone }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer Actions -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); padding-top: var(--space-5); margin-top: var(--space-5);">
+      <a href="{{ url_for('main.index') }}" class="btn btn-outline btn-sm">
+        <i data-lucide="home"></i> Return to Public Home
+      </a>
+      
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.3);">
+        <i data-lucide="log-out"></i> Sign Out
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function copyRef() {
+  const text = document.getElementById('ref-no-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Application Reference ID copied to clipboard: ' + text);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,661 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Citizen & Litigant Portal - NyayaDesk{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+
+  <!-- 1. PAGE HEADER (Linear / Stripe Style) -->
+  <div class="dashboard-page-header">
+    <div class="header-left">
+      <div class="header-eyebrow">
+        <span class="role-chip" style="background: rgba(16, 185, 129, 0.12); color: var(--color-success);">
+          <i data-lucide="user-check" style="width: 12px; height: 12px;"></i> Authenticated Citizen Portal
+        </span>
+        <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
+          <span class="status-indicator live"></span> Aadhaar / ID Verified &bull; Direct Judicial Access
+        </span>
+      </div>
+      <h1 class="page-title">Citizen Workspace & Legal Remedies</h1>
+      <p class="page-subtitle">
+        Welcome, <strong>{{ user.full_name }}</strong> &bull; Track dispute proceedings, inspect certified digital orders, and remit statutory court fees.
+      </p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="openDrawer('ai-chat-drawer')">
+        <i data-lucide="sparkles" style="color: var(--color-accent);"></i> AI Legal Desk
+      </button>
+      <button class="btn btn-accent btn-sm" onclick="openPaymentModal(1, 500.0, 'E-Court Filing Fee')">
+        <i data-lucide="credit-card"></i> Pay Court Fee
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. KPI METRICS ROW -->
+  <div class="kpi-grid" style="margin-bottom: var(--space-6);">
+    <!-- KPI 1 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">My Registered Disputes</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="check" style="width: 12px; height: 12px;"></i> On Record
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="{{ my_cases|length }}">{{ my_cases|length }}</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 14L26 15L38 10L50 8L62 4" stroke="var(--color-primary-dark)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Active matters in Delhi jurisdiction</div>
+    </div>
+
+    <!-- KPI 2 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Next Court Listing</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="calendar" style="width: 12px; height: 12px;"></i> Scheduled
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" style="font-size: 1.4rem;">
+          {{ my_cases[0].next_hearing_date.strftime('%d %b %Y') if my_cases and my_cases[0].next_hearing_date else 'Awaiting' }}
+        </div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 12L14 10L26 14L38 8L50 11L62 3" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Cause list hearing countdown</div>
+    </div>
+
+    <!-- KPI 3 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Certified Fee Receipts</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Authenticated
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" data-count="{{ my_payments|length }}">{{ my_payments|length }}</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 16L14 14L26 11L38 9L50 6L62 2" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">Digital GRN treasury vouchers</div>
+    </div>
+
+    <!-- KPI 4 -->
+    <div class="kpi-stat-card">
+      <div class="kpi-header">
+        <span class="kpi-label">AI Legal Help Desk</span>
+        <span class="kpi-delta positive">
+          <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> 24/7 Live
+        </span>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-number" style="font-size: 1.4rem; color: var(--color-accent-dark);">NyayaMitra</div>
+        <div class="kpi-sparkline">
+          <svg width="64" height="24" viewBox="0 0 64 24" fill="none">
+            <path d="M2 18L14 15L26 12L38 10L50 7L62 3" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="kpi-caption">English, Telugu & Hindi assistance</div>
+    </div>
+  </div>
+
+  <!-- 3. NEXT HEARING HIGHLIGHT CARD (If cases exist) -->
+  {% if my_cases and my_cases[0].next_hearing_date %}
+    <div class="card" style="margin-bottom: var(--space-8); padding: var(--space-6); border: 1px solid rgba(201, 162, 75, 0.4); background: linear-gradient(135deg, rgba(201, 162, 75, 0.08), var(--color-surface));">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-4);">
+        <div>
+          <div style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.15); color: var(--color-accent-dark); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: var(--space-2);">
+            <i data-lucide="bell-ring" style="width: 12px; height: 12px;"></i> Upcoming Cause List Appearance
+          </div>
+          <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">
+            {{ my_cases[0].case_number }} &bull; {{ my_cases[0].title }}
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin: 0;">
+            Court Venue: <strong>{{ my_cases[0].court.name if my_cases[0].court else 'High Court of Delhi' }}</strong> &bull; Scheduled Date: <strong>{{ my_cases[0].next_hearing_date.strftime('%d %B %Y') }}</strong>
+          </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+          <button class="btn btn-outline btn-sm" onclick="openCaseDrawer({{ my_cases[0].id }})">
+            <i data-lucide="file-text"></i> Inspect Case File
+          </button>
+          <button class="btn btn-accent btn-sm" onclick="openPaymentModal({{ my_cases[0].id }}, 500.0, 'Certified Copy Fee')">
+            <i data-lucide="receipt"></i> Request Certified Copy (₹ 500)
+          </button>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- 4. MY ACTIVE COURT CASES WITH VISUAL PROGRESS STEPPER -->
+  <section style="margin-bottom: var(--space-8);">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: var(--space-4);">
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.3rem; margin-bottom: 2px;">My Active Court Cases & Stage Trackers</h3>
+        <p class="card-subtitle" style="font-size: 0.82rem; margin: 0;">Real-time lifecycle milestones from filing and scrutiny to judicial verdict.</p>
+      </div>
+      <span class="badge badge-primary">{{ my_cases|length }} Represented Matters</span>
+    </div>
+
+    {% if my_cases %}
+      <div style="display: flex; flex-direction: column; gap: var(--space-5);">
+        {% for cs in my_cases %}
+          <div class="card" style="box-shadow: var(--shadow-sm); border: 1px solid var(--color-border); border-top: 3px solid var(--color-primary); padding: var(--space-6);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-4); margin-bottom: var(--space-5);">
+              <div>
+                <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 4px;">
+                  <span class="badge badge-primary" style="font-size: 0.72rem;">{{ cs.case_type }}</span>
+                  <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary-dark); font-size: 0.88rem;">
+                    {{ cs.case_number }}
+                  </span>
+                </div>
+                <h4 style="font-size: 1.15rem; font-weight: 700; color: var(--color-text); margin: 0 0 4px 0;">
+                  {{ cs.title }}
+                </h4>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">
+                  Venue: <strong>{{ cs.court.name }}</strong> &bull; Filed On: {{ cs.filed_on.strftime('%d-%m-%Y') }}
+                </div>
+              </div>
+
+              <div style="text-align: right;">
+                <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em;">Next Hearing Date</div>
+                <div style="font-size: 1.15rem; font-weight: 800; font-family: var(--font-mono); color: var(--color-accent-dark);">
+                  {{ cs.next_hearing_date.strftime('%d %b %Y') if cs.next_hearing_date else 'Awaiting Listing' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- 5-Stage Stepper -->
+            {% set status_order = {'Filed': 1, 'Scrutiny': 1, 'Registered': 2, 'Hearing': 3, 'Reserved': 4, 'Judgment': 4, 'Disposed': 5, 'Appealed': 5} %}
+            {% set current_step = status_order.get(cs.status, 2) %}
+
+            <div class="stepper-container" style="margin: var(--space-4) auto var(--space-6) auto; max-width: 680px;">
+              <div class="stepper-progress-bar">
+                <div class="stepper-progress-fill" style="width: {{ (current_step - 1) * 25 }}%;"></div>
+              </div>
+              
+              <div class="step-node {% if current_step >= 1 %}completed{% endif %}">
+                <div class="step-circle">✓</div>
+                <div class="step-label">Filed</div>
+              </div>
+
+              <div class="step-node {% if current_step > 2 %}completed{% elif current_step == 2 %}active{% endif %}">
+                <div class="step-circle">{% if current_step > 2 %}✓{% else %}2{% endif %}</div>
+                <div class="step-label">Registered</div>
+              </div>
+
+              <div class="step-node {% if current_step > 3 %}completed{% elif current_step == 3 %}active{% endif %}">
+                <div class="step-circle">{% if current_step > 3 %}✓{% else %}3{% endif %}</div>
+                <div class="step-label">Hearing</div>
+              </div>
+
+              <div class="step-node {% if current_step > 4 %}completed{% elif current_step == 4 %}active{% endif %}">
+                <div class="step-circle">{% if current_step > 4 %}✓{% else %}4{% endif %}</div>
+                <div class="step-label">Judgment</div>
+              </div>
+
+              <div class="step-node {% if current_step == 5 %}completed active{% endif %}">
+                <div class="step-circle">{% if current_step == 5 %}✓{% else %}5{% endif %}</div>
+                <div class="step-label">Disposed</div>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: var(--space-3); border-top: 1px solid var(--color-border); padding-top: var(--space-4);">
+              <button class="btn btn-outline btn-sm" onclick="openCaseDrawer({{ cs.id }})">
+                <i data-lucide="file-text"></i> View Certified Docket
+              </button>
+              <button class="btn btn-accent btn-sm" onclick="openPaymentModal({{ cs.id }}, 500.0, 'Certified Copy Fee')">
+                <i data-lucide="receipt"></i> Request Certified Copy (₹ 500)
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card" style="text-align: center; padding: var(--space-10); color: var(--color-text-muted); border: 1px solid var(--color-border);">
+        <i data-lucide="scale" style="width: 44px; height: 44px; stroke-width: 1.2; margin-bottom: var(--space-3); color: var(--color-text-muted);"></i>
+        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">No Disputes Registered</h4>
+        <p style="font-size: 0.85rem; max-width: 440px; margin: 0 auto;">No pending judicial matters found under your citizen identity profile.</p>
+      </div>
+    {% endif %}
+  </section>
+
+  <!-- 5. PAYMENT RECEIPTS -->
+  <section id="payments-section" class="card" style="margin-bottom: var(--space-8); padding: 0; overflow: hidden; border: 1px solid var(--color-border);">
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div>
+          <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 2px;">Electronic Fee Receipts</h3>
+          <p class="card-subtitle" style="font-size: 0.78rem; margin: 0;">Authenticated statutory payments with verified treasury transaction references.</p>
+        </div>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-outline btn-sm" onclick="openPaymentModal(1, 500.0, 'Statutory Court Fee')">
+          <i data-lucide="credit-card"></i> Pay New Fee
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Transaction Ref</th>
+            <th>Description</th>
+            <th>Amount Paid</th>
+            <th>Timestamp</th>
+            <th>Status</th>
+            <th style="text-align: right;">Receipt</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if my_payments %}
+            {% for p in my_payments %}
+              <tr>
+                <td><code style="font-family: var(--font-mono); font-weight: 700;">{{ p.reference }}</code></td>
+                <td><strong>{{ p.purpose }}</strong></td>
+                <td><strong style="font-family: var(--font-mono);">₹ {{ "%.2f"|format(p.amount) }}</strong></td>
+                <td>{{ p.paid_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                <td><span class="status-pill status-disposed"><span class="status-dot"></span> {{ p.status }}</span></td>
+                <td style="text-align: right;">
+                  <button class="btn btn-outline btn-sm" onclick="printReceipt('{{ p.reference }}', '{{ p.purpose }}', {{ p.amount }}, '{{ p.paid_at.strftime('%d-%m-%Y') }}')">
+                    <i data-lucide="printer"></i> Print Receipt
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" style="text-align: center; padding: var(--space-8); color: var(--color-text-muted);">
+                No payment vouchers on record.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<!-- Payment Gateway Modal -->
+<div id="payment-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 8px; border-radius: var(--radius-full); background: rgba(16, 185, 129, 0.1); color: var(--color-success); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-1);">
+          <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> Encrypted Judicial Gateway
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">Simulated Court Fee Remittance</h3>
+      </div>
+      <button onclick="closeModal('payment-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="payment-form" onsubmit="processPayment(event)" class="modal-body" style="padding: var(--space-6);">
+      <input type="hidden" id="pay-case-id">
+      
+      <!-- Checkout Amount Card -->
+      <div style="background: var(--color-surface-subtle); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--color-border); margin-bottom: var(--space-5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+          <span style="font-size: 0.8rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em;">
+            Remittance Purpose:
+          </span>
+          <span class="badge badge-info" id="pay-purpose-label" style="font-size: 0.75rem;">Court Fee</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span style="font-size: 0.88rem; color: var(--color-text-secondary); font-weight: 500;">Amount Due:</span>
+          <div style="font-size: 1.75rem; font-weight: 800; color: var(--color-success); font-family: var(--font-mono);">
+            ₹ <span id="pay-amount-label">500.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="pay-method">Payment Channel</label>
+        <select class="form-control" id="pay-method">
+          <option value="UPI">UPI / Instant QR Code (Simulated)</option>
+          <option value="NetBanking">Net Banking (State Bank of India / HDFC / PNB)</option>
+          <option value="DebitCard">Debit Card / Judicial Smart Card</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Remitter Legal Name</label>
+        <input type="text" class="form-control" value="{{ user.full_name }}" readonly style="background: var(--color-surface-subtle); color: var(--color-text);">
+      </div>
+
+      <div style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-4); font-size: 0.72rem; color: var(--color-text-muted);">
+        <i data-lucide="lock" style="width: 13px; height: 13px; color: var(--color-success);"></i>
+        <span>256-bit TLS Encrypted &bull; Official Treasury Ledger Dispatch</span>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('payment-modal')">Cancel</button>
+        <button type="submit" class="btn btn-success" style="padding: 0.75rem 1.5rem; font-weight: 600;">
+          <i data-lucide="check-circle-2"></i> Authorize & Remit Payment
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- AI Help Chatbot Drawer -->
+<div id="ai-chat-drawer" class="drawer-overlay">
+  <div class="drawer" style="max-width: 440px; display: flex; flex-direction: column;">
+    <div class="drawer-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5);">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase;">
+          <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> AI Legal Desk
+        </div>
+        <h3 class="heading-serif" style="font-size: 1.2rem; margin-top: 2px; color: var(--color-text);">NyayaMitra Assistant</h3>
+      </div>
+      <button onclick="closeDrawer('ai-chat-drawer')" style="background: none; border: none; font-size: 1.5rem; color: var(--color-text-muted); cursor: pointer;">&times;</button>
+    </div>
+
+    <!-- Language Selector Toolbar -->
+    <div style="padding: var(--space-2) var(--space-4); background: var(--color-surface-subtle); border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between;">
+      <span class="text-xs text-muted">Language:</span>
+      <div style="display: flex; gap: 4px;">
+        <button class="btn btn-sm btn-ghost lang-btn active" data-lang="en" onclick="setChatLanguage('en', this)" style="padding: 2px 8px; font-size: 0.75rem;">English</button>
+        <button class="btn btn-sm btn-ghost lang-btn" data-lang="te" onclick="setChatLanguage('te', this)" style="padding: 2px 8px; font-size: 0.75rem;">తెలుగు</button>
+        <button class="btn btn-sm btn-ghost lang-btn" data-lang="hi" onclick="setChatLanguage('hi', this)" style="padding: 2px 8px; font-size: 0.75rem;">हिन्दी</button>
+      </div>
+    </div>
+
+    <!-- Suggestion Chips -->
+    <div style="padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); display: flex; gap: 6px; overflow-x: auto; white-space: nowrap;">
+      <button class="btn btn-outline btn-sm" onclick="askQuickPrompt('How do I apply for regular bail in District Court?')" style="font-size: 0.72rem; padding: 2px 8px;">
+        ⚖️ Bail Procedure
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="askQuickPrompt('What documents do I need for certified copy?')" style="font-size: 0.72rem; padding: 2px 8px;">
+        📄 Certified Copies
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="askQuickPrompt('How to check next hearing date?')" style="font-size: 0.72rem; padding: 2px 8px;">
+        🔍 Case Status
+      </button>
+    </div>
+
+    <div class="drawer-body" id="chat-messages" style="flex: 1; padding: var(--space-4); display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; background: var(--color-bg);">
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; align-self: flex-start; max-width: 88%; box-shadow: var(--shadow-xs);">
+        <div style="display: flex; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--color-accent); font-weight: 700; margin-bottom: 4px;">
+          <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> NyayaMitra
+        </div>
+        Hello {{ user.full_name.split()[0] }}. I am your automated legal assistant. You can ask me procedural questions about bail hearings, statutory court fees, or certified orders.
+      </div>
+    </div>
+
+    <div class="drawer-footer" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); display: flex; gap: 0.5rem; background: var(--color-surface);">
+      <input type="text" id="chat-input" class="form-control" placeholder="Ask a procedural question..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+      <button class="btn btn-accent btn-sm" onclick="sendChatMessage()">
+        <i data-lucide="send" style="width: 14px; height: 14px;"></i>
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let activeChatLang = 'en';
+
+function setChatLanguage(lang, btn) {
+  activeChatLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+  btn.classList.add('active');
+  showToast(`Switched language to ${btn.textContent}`, 'info');
+}
+
+function askQuickPrompt(text) {
+  document.getElementById('chat-input').value = text;
+  sendChatMessage();
+}
+
+function openPaymentModal(caseId, amount, purpose) {
+  document.getElementById('pay-case-id').value = caseId;
+  document.getElementById('pay-amount-label').textContent = amount.toFixed(2);
+  document.getElementById('pay-purpose-label').textContent = purpose;
+  openModal('payment-modal');
+}
+
+async function processPayment(e) {
+  e.preventDefault();
+  const caseId = document.getElementById('pay-case-id').value;
+  const amount = parseFloat(document.getElementById('pay-amount-label').textContent);
+  const purpose = document.getElementById('pay-purpose-label').textContent;
+
+  try {
+    const res = await fetch('/api/litigant/pay-fee', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, amount, purpose })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`Payment Approved! Ref: ${data.reference}`, 'success', 6000);
+      closeModal('payment-modal');
+      setTimeout(() => location.reload(), 1500);
+    }
+  } catch(e) {
+    showToast('Payment processing error.', 'danger');
+  }
+}
+
+function printReceipt(ref, purpose, amount, date) {
+  const win = window.open('', '', 'width=780,height=820');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Judicial Treasury Receipt - ${ref}</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          body {
+            font-family: 'Times New Roman', Georgia, serif;
+            color: #111827;
+            padding: 24px;
+            max-width: 680px;
+            margin: 0 auto;
+            background: #FFF;
+            line-height: 1.5;
+          }
+          .receipt-frame {
+            border: 2px solid #1F2937;
+            padding: 24px;
+            position: relative;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px double #1F2937;
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+          }
+          .emblem { font-size: 26pt; font-weight: bold; margin-bottom: 2px; }
+          .court-title { font-size: 14pt; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+          .receipt-title { font-size: 11pt; font-weight: bold; color: #374151; margin-top: 4px; }
+          .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10.5pt; }
+          .meta-table td { padding: 6px 4px; }
+          .item-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 10.5pt; }
+          .item-table th, .item-table td { border: 1px solid #374151; padding: 8px 10px; }
+          .item-table th { background: #F3F4F6; text-align: left; }
+          .total-row { font-weight: bold; font-size: 11.5pt; }
+          .seal-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 32px;
+            padding-top: 12px;
+            border-top: 1px solid #9CA3AF;
+          }
+          .qr-placeholder {
+            width: 58pt;
+            height: 58pt;
+            border: 1.5px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            font-size: 7pt;
+            text-align: center;
+          }
+          .sign-block { text-align: right; font-size: 9.5pt; }
+          .security-footer {
+            margin-top: 16px;
+            font-size: 8pt;
+            color: #6B7280;
+            text-align: center;
+            border-top: 1px dashed #D1D5DB;
+            padding-top: 8px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-frame">
+          <div class="header">
+            <div class="emblem">§</div>
+            <div class="court-title">High Court of Delhi &bull; Central Judicial Registry</div>
+            <div class="receipt-title">ELECTRONIC COURT FEES & STAMP DUTY RECEIPT (GRN)</div>
+            <div style="font-size: 9pt; color: #4B5563;">Issued under the Court Fees Act, 1870 & Delhi e-Courts Rules</div>
+          </div>
+
+          <table class="meta-table">
+            <tr>
+              <td style="width: 50%;"><strong>GRN Reference:</strong> <code style="font-size: 11pt; font-weight: 700;">${ref}</code></td>
+              <td style="width: 50%; text-align: right;"><strong>Date & Time:</strong> ${date}</td>
+            </tr>
+            <tr>
+              <td><strong>Remitter Name:</strong> {{ user.full_name }}</td>
+              <td style="text-align: right;"><strong>Payment Channel:</strong> Treasury Portal / NetBanking</td>
+            </tr>
+            <tr>
+              <td><strong>Dispute Category:</strong> Judicial Proceedings Filing</td>
+              <td style="text-align: right;"><strong>Status:</strong> <span style="font-weight: 700; color: #047857;">DIGITALLY VERIFIED</span></td>
+            </tr>
+          </table>
+
+          <table class="item-table">
+            <thead>
+              <tr>
+                <th style="width: 10%;">#</th>
+                <th>Statutory Head / Description</th>
+                <th style="width: 25%; text-align: right;">Amount (INR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><strong>${purpose}</strong><br><span style="font-size: 8.5pt; color: #4B5563;">Statutory Electronic Stamp Duty & Scrutiny Fee</span></td>
+                <td style="text-align: right; font-family: monospace; font-size: 11pt;">₹ ${amount.toFixed(2)}</td>
+              </tr>
+              <tr class="total-row">
+                <td colspan="2" style="text-align: right;">TOTAL REMITTANCE RECEIVED:</td>
+                <td style="text-align: right; font-family: monospace; font-size: 12pt; color: #047857;">₹ ${amount.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="seal-section">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="qr-placeholder">
+                [QR CODE]<br>${ref.substring(0, 8)}
+              </div>
+              <div style="font-size: 8.5pt; color: #4B5563;">
+                <div><strong>Cryptographic SHA-256 Token:</strong></div>
+                <div style="font-family: monospace; font-size: 7.5pt; word-break: break-all; max-width: 220px;">
+                  e9b7f3a8c14d98a023719bfe982b610a34dc
+                </div>
+                <div style="margin-top: 2px;">Authenticity verified via Delhi State Treasury</div>
+              </div>
+            </div>
+
+            <div class="sign-block">
+              <div style="font-weight: bold; margin-bottom: 2px;">Registrar (Judicial Administration)</div>
+              <div>High Court of Delhi, New Delhi</div>
+              <div style="font-size: 8pt; color: #6B7280; margin-top: 2px;">[Digitally Signed Electronic Document]</div>
+            </div>
+          </div>
+
+          <div class="security-footer">
+            This is a computer-generated statutory judicial document. No physical signature is required pursuant to Section 65B of the Indian Evidence Act, 1872.
+          </div>
+        </div>
+        <script>window.print();<\/script>
+      </body>
+    </html>
+  `);
+  win.document.close();
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const container = document.getElementById('chat-messages');
+  container.innerHTML += `
+    <div style="background: var(--color-primary); color: #FFF; padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; align-self: flex-end; max-width: 85%;">
+      ${text}
+    </div>
+  `;
+  input.value = '';
+  container.scrollTop = container.scrollHeight;
+
+  // Add temporary typing indicator
+  const typingId = 'typing-' + Date.now();
+  container.innerHTML += `
+    <div id="${typingId}" style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 0.6rem 0.85rem; border-radius: var(--radius-md); font-size: 0.8rem; color: var(--color-text-muted); align-self: flex-start;">
+      <i data-lucide="sparkles" class="spin" style="width: 12px; height: 12px;"></i> NyayaMitra is analyzing query...
+    </div>
+  `;
+  if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const res = await fetch('/api/litigant/ai-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: text, language: activeChatLang })
+    });
+
+    const indicator = document.getElementById(typingId);
+    if (indicator) indicator.remove();
+
+    if (res.ok) {
+      const data = await res.json();
+      container.innerHTML += `
+        <div style="background: var(--color-surface); border: 1px solid var(--color-border); padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; align-self: flex-start; max-width: 88%; box-shadow: var(--shadow-xs);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 0.75rem; color: var(--color-accent); font-weight: 700; display: flex; align-items: center; gap: 4px;">
+              <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> NyayaMitra
+            </span>
+            <span class="badge badge-outline" style="font-size: 0.65rem;">${data.mode || 'Demo Mode'}</span>
+          </div>
+          <div style="line-height: 1.5; color: var(--color-text);">${data.reply}</div>
+        </div>
+      `;
+      if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+      container.scrollTop = container.scrollHeight;
+    }
+  } catch(e) {
+    const indicator = document.getElementById(typingId);
+    if (indicator) indicator.remove();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof initStatCountUp === 'function') initStatCountUp();
+});
+</script>
+{% endblock %}

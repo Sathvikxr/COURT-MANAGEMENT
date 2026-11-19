@@ -1,0 +1,1367 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Judicial Bench Chambers - NyayaDesk{% endblock %}
+
+{% block content %}
+<!-- JUDICIAL BENCH PAGE HEADER -->
+<div class="dashboard-page-header">
+  <div class="dashboard-title-group">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 10px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-2);">
+      <span class="pulse-dot"></span> Judicial Chambers &bull; Presiding Bench
+    </div>
+    <h2>{{ user.full_name }}</h2>
+    <p>
+      {{ user.designation }} &bull; {{ user.court.name if user.court else 'Division Bench' }} &bull; Bench Chamber Active
+    </p>
+  </div>
+
+  <div class="dashboard-actions-group">
+    <button class="btn btn-accent btn-sm" onclick="openOrderModal(null, 'WP(C)/1104/2026')">
+      <i data-lucide="file-signature"></i> Draft Bench Order
+    </button>
+  </div>
+</div>
+
+<!-- 1. COMPACT KPI ROW WITH DELTAS & SPARKLINES -->
+<div class="grid grid-cols-4" style="margin-bottom: var(--space-6);">
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Today's Cause List</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-accent);">
+        <i data-lucide="calendar-check" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ hearings_today|length }}</div>
+      <div class="kpi-delta neutral">
+        <i data-lucide="clock" style="width: 12px; height: 12px;"></i> Active Session
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,20 Q25,8 50,14 T100,6" fill="none" stroke="var(--color-accent)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Assigned Dockets</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-primary);">
+        <i data-lucide="folder" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">{{ cases_assigned|length }}</div>
+      <div class="kpi-delta up-positive">
+        <i data-lucide="check" style="width: 12px; height: 12px;"></i> In Bench Roster
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,16 Q30,12 60,18 T100,8" fill="none" stroke="var(--color-primary)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Signed Orders</span>
+      <div class="kpi-icon-wrap" style="color: var(--color-success);">
+        <i data-lucide="stamp" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number stat-value">17</div>
+      <div class="kpi-delta up-positive">
+        <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i> SHA-256 Sealed
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,22 Q30,18 60,10 T100,4" fill="none" stroke="var(--color-success)" stroke-width="2" />
+    </svg>
+  </div>
+
+  <div class="kpi-stat-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Disposal Rate</span>
+      <div class="kpi-icon-wrap" style="color: #10B981;">
+        <i data-lucide="trending-up" style="width: 16px; height: 16px;"></i>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <div class="kpi-number">88<span style="font-size: 1.1rem; font-weight: 600;">%</span></div>
+      <div class="kpi-delta up-positive">
+        <i data-lucide="arrow-up-right" style="width: 12px; height: 12px;"></i> High Velocity
+      </div>
+    </div>
+    <svg class="kpi-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
+      <path d="M0,20 Q30,14 60,8 T100,3" fill="none" stroke="#10B981" stroke-width="2" />
+    </svg>
+  </div>
+</div>
+
+<!-- 2. "NEXT HEARING" HIGHLIGHT CARD (IF HEARINGS EXIST TODAY) -->
+{% if hearings_today %}
+  {% set next_h = hearings_today[0] %}
+  <div style="background: linear-gradient(135deg, rgba(201, 162, 75, 0.08) 0%, rgba(11, 31, 58, 0.04) 100%); border: 1px solid rgba(201, 162, 75, 0.3); border-radius: var(--radius-xl); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4); position: relative; overflow: hidden;">
+    <div style="position: absolute; right: -20px; top: -20px; width: 140px; height: 140px; background: radial-gradient(circle, rgba(201, 162, 75, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+
+    <div>
+      <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+        <span class="badge badge-warning" style="font-size: 0.72rem; letter-spacing: 0.04em;">
+          <span class="pulse-dot"></span> NEXT UP ON BENCH
+        </span>
+        <code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface); border: 1px solid var(--color-border); font-size: 0.82rem; font-weight: 700;">{{ next_h.case.case_number }}</code>
+        <span class="badge badge-info" style="font-size: 0.72rem;">{{ next_h.case.case_type }}</span>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--space-1);">
+        {{ next_h.case.title }}
+      </h3>
+      <div style="font-size: 0.85rem; color: var(--color-text-muted); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+        <span><i data-lucide="clock" style="width: 14px; height: 14px; display: inline; vertical-align: middle;"></i> Scheduled: <strong>{{ next_h.scheduled_at.strftime('%I:%M %p') }}</strong></span>
+        <span>&bull;</span>
+        <span><i data-lucide="landmark" style="width: 14px; height: 14px; display: inline; vertical-align: middle;"></i> {{ next_h.courtroom.name if next_h.courtroom else 'Courtroom 1' }}</span>
+        <span>&bull;</span>
+        <span><strong>Stage:</strong> {{ next_h.purpose }}</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: var(--space-2); align-items: center; position: relative; z-index: 2;">
+      <button class="btn btn-outline btn-sm" onclick="fetchAISummary({{ next_h.case_id }}, '{{ next_h.case.case_number }}')">
+        <i data-lucide="sparkles" style="width: 13px; height: 13px; color: var(--color-accent);"></i> AI Brief
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="openCaseDrawer({{ next_h.case_id }})">
+        <i data-lucide="folder"></i> Docket
+      </button>
+      <button class="btn btn-accent btn-sm" onclick="openOrderModal({{ next_h.case_id }}, '{{ next_h.case.case_number }}')">
+        <i data-lucide="file-signature"></i> Pass Order
+      </button>
+      <button class="btn btn-success btn-sm" onclick="completeHearing({{ next_h.id }})">
+        <i data-lucide="check"></i> Conclude
+      </button>
+      <button class="btn btn-danger btn-sm" onclick="promptAdjourn({{ next_h.id }}, '{{ next_h.case.case_number }}')">
+        <i data-lucide="calendar-clock"></i> Adjourn
+      </button>
+    </div>
+  </div>
+{% endif %}
+
+<!-- 3. TODAY'S CAUSE LIST TIMELINE (CORE BENCH INTERACTION) -->
+<section id="cause-list-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 2px;">
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+          Today's Daily Cause List & Hearing Timeline
+        </h3>
+        <span class="badge badge-accent" style="font-size: 0.7rem;">Sequential Bench Roster</span>
+      </div>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Active judicial docket called in numerical sequence for today's court session.
+      </p>
+    </div>
+    
+    <div style="display: flex; gap: var(--space-3); align-items: center;">
+      <button class="btn btn-outline btn-sm" id="btn-toggle-ai-order" onclick="toggleAICauseList()">
+        <i data-lucide="sparkles" style="width: 13px; height: 13px; color: var(--color-accent);"></i> AI Suggested Priority Sequence
+      </button>
+      <span class="badge badge-info" style="font-size: 0.72rem;">{{ hearings_today|length }} Matters Listed</span>
+    </div>
+  </div>
+
+  <div style="padding: var(--space-6);">
+    {% if hearings_today %}
+      <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        {% for h in hearings_today %}
+          <div id="hearing-card-{{ h.id }}" class="card-lift" style="border: 1px solid var(--color-border); border-left: 4px solid {% if h.status == 'Completed' %}var(--color-success){% elif h.status == 'Adjourned' %}var(--color-warning){% else %}var(--color-accent){% endif %}; border-radius: var(--radius-lg); padding: var(--space-5); background: var(--color-surface); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+            <div>
+              <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
+                <span class="badge badge-primary" style="font-size: 0.72rem;">Item #{{ loop.index }}</span>
+                <strong style="font-size: 1rem; color: var(--color-text); font-family: var(--font-mono);">{{ h.case.case_number }}</strong>
+                <span class="badge {% if h.status == 'Completed' %}badge-success{% elif h.status == 'Adjourned' %}badge-warning{% else %}badge-info{% endif %}" style="font-size: 0.7rem;">{{ h.status }}</span>
+                <span class="badge badge-outline" style="font-size: 0.68rem;">{{ h.case.case_type }}</span>
+              </div>
+              <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-text); margin-bottom: 2px;">{{ h.case.title }}</div>
+              <div style="font-size: 0.8rem; color: var(--color-text-muted);">
+                <strong>Purpose:</strong> {{ h.purpose }} &bull; <strong>Time:</strong> {{ h.scheduled_at.strftime('%I:%M %p') }} &bull; <strong>Chamber:</strong> {{ h.courtroom.name if h.courtroom else 'Courtroom 1' }}
+              </div>
+            </div>
+
+            <div style="display: flex; gap: var(--space-2); align-items: center;">
+              <!-- AI Summary Button -->
+              <button class="btn btn-outline btn-sm" onclick="fetchAISummary({{ h.case_id }}, '{{ h.case.case_number }}')" title="AI Briefing">
+                <i data-lucide="sparkles" style="width: 13px; height: 13px; color: var(--color-accent);"></i> AI Summary
+              </button>
+
+              <!-- Inspect Docket -->
+              <button class="btn btn-outline btn-sm" onclick="openCaseDrawer({{ h.case_id }})">
+                <i data-lucide="folder"></i> Docket
+              </button>
+
+              <!-- Draft Order for this case -->
+              <button class="btn btn-accent btn-sm" onclick="openOrderModal({{ h.case_id }}, '{{ h.case.case_number }}')">
+                <i data-lucide="file-signature"></i> Pass Order
+              </button>
+
+              <!-- Transcribe Hearing Audio & Generate Minutes -->
+              <button class="btn btn-outline btn-sm" onclick="openTranscriptionModal({{ h.id }}, '{{ h.case.case_number }}')">
+                <i data-lucide="mic"></i> Transcribe & Minutes
+              </button>
+
+              <!-- Complete Hearing -->
+              <button class="btn btn-success btn-sm" onclick="completeHearing({{ h.id }})">
+                <i data-lucide="check"></i> Conclude
+              </button>
+
+              <!-- Adjourn Hearing -->
+              <button class="btn btn-danger btn-sm" onclick="promptAdjourn({{ h.id }}, '{{ h.case.case_number }}')">
+                <i data-lucide="calendar-clock"></i> Adjourn
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem 1.5rem; background: var(--color-surface-subtle); border-radius: var(--radius-lg); border: 1px dashed var(--color-border); color: var(--color-text-muted);">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(201, 162, 75, 0.12); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-3) auto;">
+          <i data-lucide="scale" style="width: 26px; height: 26px;"></i>
+        </div>
+        <h4 style="color: var(--color-text); margin-bottom: 0.35rem; font-size: 1.05rem;">Welcome to Your Judicial Bench</h4>
+        <p style="font-size: 0.85rem; max-width: 460px; margin: 0 auto; color: var(--color-text-muted);">
+          No hearings are listed on your daily cause list for today. When the Registry schedules or reallocates matters to your courtroom, they will appear here in real-time.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- 4. FULLCALENDAR UPCOMING HEARINGS TAB -->
+<section id="calendar-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+        Bench Hearing Schedule & Interactive Roster
+      </h3>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Upcoming judicial arguments, evidence sessions, and order pronouncement dates.
+      </p>
+    </div>
+    <span class="badge badge-primary" style="font-size: 0.7rem;">Interactive FullCalendar</span>
+  </div>
+
+  <div style="padding: var(--space-5);">
+    <div id="judge-calendar" style="min-height: 480px;"></div>
+  </div>
+</section>
+
+<!-- 5. ASSIGNED CASES DOCKET TABLE -->
+<section id="docket-section" class="card" style="margin-bottom: var(--space-8); border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+  <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-5) var(--space-6);">
+    <div>
+      <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">
+        Assigned Judicial Caseload
+      </h3>
+      <p class="card-subtitle" style="font-size: 0.82rem; color: var(--color-text-muted);">
+        Complete registry dockets assigned to this bench chamber.
+      </p>
+    </div>
+    <span class="badge badge-info" style="font-size: 0.72rem;">{{ cases_assigned|length }} Active Matters</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dense">
+      <thead>
+        <tr>
+          <th>CNR / Case Number</th>
+          <th>Dispute Title</th>
+          <th>Legal Category</th>
+          <th>Current Procedural Stage</th>
+          <th>Next Hearing</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if cases_assigned %}
+          {% for cs in cases_assigned %}
+            <tr>
+              <td><code style="padding: 2px 6px; border-radius: var(--radius-xs); background: var(--color-surface-subtle); border: 1px solid var(--color-border);">${cs.case_number}</code></td>
+              <td><strong style="color: var(--color-text);">${cs.title}</strong></td>
+              <td><span class="badge badge-primary">${cs.case_type}</span></td>
+              <td><span class="badge badge-info">${cs.status}</span></td>
+              <td style="font-size: 0.8rem; color: var(--color-text-muted);">${cs.next_hearing_date.strftime('%d-%m-%Y') if cs.next_hearing_date else 'Disposed'}</td>
+              <td style="text-align: right;">
+                <button class="btn btn-outline btn-sm" onclick="openCaseDrawer(${cs.id})">
+                  <i data-lucide="eye"></i> View Dossier
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted);">
+              <i data-lucide="folder-open" style="width: 44px; height: 44px; color: var(--color-accent); margin-bottom: 0.5rem;"></i>
+              <div style="font-weight: 600; font-size: 1rem; color: var(--color-text);">No Cases Allocated Yet</div>
+              <p style="font-size: 0.85rem; margin-top: 0.35rem; max-width: 420px; margin-left: auto; margin-right: auto;">
+                Your judicial bench currently has no active case dockets assigned. As petitions pass registry scrutiny, the Registrar General will allocate matters to your court.
+              </p>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 6. BENCH ANALYTICS & VELOCITY CHARTS -->
+<section class="grid grid-cols-2" style="margin-bottom: var(--space-8); gap: var(--space-6);">
+  <div class="card" style="border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5);">
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text);">Bench Caseload by Type</h3>
+        <p class="card-subtitle" style="font-size: 0.78rem; color: var(--color-text-muted);">Active dispute categories assigned to this courtroom.</p>
+      </div>
+      <span class="badge badge-accent" style="font-size: 0.68rem;">Live Bench Data</span>
+    </div>
+    <div style="padding: var(--space-5); height: 260px; position: relative;">
+      <canvas id="chart-judge-case-types"></canvas>
+    </div>
+  </div>
+
+  <div class="card" style="border: 1px solid var(--color-border); box-shadow: var(--shadow-sm);">
+    <div class="card-header" style="border-bottom: 1px solid var(--color-border); padding: var(--space-4) var(--space-5);">
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text);">Hearing Disposition Velocity</h3>
+        <p class="card-subtitle" style="font-size: 0.78rem; color: var(--color-text-muted);">Concluded arguments vs scheduled and adjourned sessions.</p>
+      </div>
+      <span class="badge badge-primary" style="font-size: 0.68rem;">Outcomes</span>
+    </div>
+    <div style="padding: var(--space-5); height: 260px; position: relative;">
+      <canvas id="chart-judge-outcomes"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE 7: NATURAL-LANGUAGE ANALYTICS ("ASK YOUR DATA") -->
+<section id="judge-analytics-copilot" class="card" style="margin-bottom: var(--space-6); border: 1px solid rgba(201,162,75,0.4); padding: var(--space-5);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(201,162,75,0.15); display: flex; align-items: center; justify-content: center; color: var(--color-accent);">
+        <i data-lucide="help-circle" style="width: 18px; height: 18px;"></i>
+      </div>
+      <div>
+        <h3 class="card-title heading-serif" style="font-size: 1.15rem; color: var(--color-text); margin: 0;">
+          Ask Your Bench Data (Natural-Language Analytics)
+        </h3>
+        <p style="font-size: 0.75rem; color: var(--color-text-muted); margin: 0;">
+          Safe parameterized database query tools (no raw SQL). Scoped strictly to your courtroom dockets.
+        </p>
+      </div>
+    </div>
+    <span class="badge badge-outline" style="font-size: 0.65rem;">⚖️ AI-generated, review before use</span>
+  </div>
+
+  <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+    <input type="text" id="judge-nl-query" class="form-control" style="font-size: 0.88rem;" placeholder="Ask judicial statistics question e.g. 'How many civil cases were disposed last month?' or 'Group cases by case type'..." onkeydown="if(event.key==='Enter') executeJudgeNlQuery()">
+    <button class="btn btn-primary" onclick="executeJudgeNlQuery()" style="display: inline-flex; align-items: center; gap: 6px; padding: 0 16px;">
+      <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i> Query Data
+    </button>
+  </div>
+
+  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; align-items: center;">
+    <span style="font-size: 0.7rem; color: var(--color-text-muted);">Quick Prompts:</span>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setJudgeNlPrompt('How many civil cases were disposed last month?')">Disposed civil cases last month</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setJudgeNlPrompt('Group cases by case type')">Breakdown by case type</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setJudgeNlPrompt('Average disposal time for cases')">Average disposal duration</button>
+    <button class="badge badge-outline" style="cursor: pointer; font-size: 0.68rem;" onclick="setJudgeNlPrompt('Hearings scheduled in next 30 days')">Upcoming 30-day docket load</button>
+  </div>
+
+  <div id="judge-nl-loading" style="display: none; padding: 12px; text-align: center;">
+    <i data-lucide="loader" class="spin" style="width: 18px; height: 18px; color: var(--color-accent); margin-bottom: 4px;"></i>
+    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Selecting safe parameterized query tool & computing metrics...</div>
+  </div>
+
+  <div id="judge-nl-result" style="display: none; background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <span id="judge-nl-summary" style="font-size: 0.88rem; font-weight: 600; color: var(--color-text);"></span>
+      <span id="judge-nl-tool-badge" class="badge badge-accent" style="font-size: 0.65rem; font-family: var(--font-mono);"></span>
+    </div>
+    <div id="judge-nl-chart-container" style="position: relative; height: 200px; display: none; margin-top: 10px;">
+      <canvas id="judgeNlChart"></canvas>
+    </div>
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.7rem; color: var(--color-text-muted); border-top: 1px solid var(--color-border); padding-top: 6px;">
+      <span>Rate Analysis:</span>
+      <button onclick="rateAIFeature('nl_analytics', 'helpful')" style="background:none; border:none; cursor:pointer;">👍</button>
+      <button onclick="rateAIFeature('nl_analytics', 'wrong')" style="background:none; border:none; cursor:pointer;">👎</button>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================================
+     JUDGE SPECIFIC MODALS
+     ========================================================================= -->
+
+<!-- FEATURE 5: HEARING TRANSCRIPTION & MINUTES MODAL -->
+<div id="transcription-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 760px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 8px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-1);">
+          <span class="pulse-dot"></span> Court Reporter &bull; AI Voice Transcription
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">Hearing Audio Transcription & Minutes</h3>
+      </div>
+      <button onclick="closeModal('transcription-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <div class="modal-body" style="padding: var(--space-5);">
+      <input type="hidden" id="transcribe-hearing-id">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--color-surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-bottom: 12px;">
+        <span style="font-size: 0.82rem; color: var(--color-text-secondary);">Matter Docket:</span>
+        <strong id="transcribe-case-number" style="font-family: var(--font-mono); color: var(--color-primary-light);"></strong>
+      </div>
+
+      <!-- Audio Input / Record Controls -->
+      <div style="background: var(--color-surface-subtle); border: 1px dashed var(--color-border); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px;">
+        <label style="font-size: 0.78rem; font-weight: 700; color: var(--color-text); display: block; margin-bottom: 6px;">Hearing Audio Input Source:</label>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <input type="file" id="transcribe-audio-file" class="form-control" accept="audio/*" style="font-size: 0.8rem; padding: 4px; flex: 1;">
+          <button type="button" id="btn-browser-record" class="btn btn-outline btn-sm" onclick="toggleHearingBrowserRecording()">
+            <i data-lucide="mic" style="width: 14px; height: 14px; margin-right: 4px;"></i> Record in Browser
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="executeHearingTranscription()">
+            <i data-lucide="sparkles" style="width: 14px; height: 14px; margin-right: 4px;"></i> Transcribe & Generate Minutes
+          </button>
+        </div>
+        <div id="record-live-indicator" style="display: none; margin-top: 6px; font-size: 0.74rem; color: var(--color-danger); font-weight: 600;">
+          <span class="pulse-dot" style="background: var(--color-danger); margin-right: 4px;"></span> Recording live hearing audio from courtroom microphone...
+        </div>
+      </div>
+
+      <div id="transcribe-loading" style="display: none; padding: 16px; text-align: center;">
+        <i data-lucide="loader" class="spin" style="width: 20px; height: 20px; color: var(--color-accent); margin-bottom: 6px;"></i>
+        <div style="font-size: 0.8rem; color: var(--color-text-muted);">Transcribing hearing audio and synthesizing action items with Gemini / Whisper...</div>
+      </div>
+
+      <!-- Editable Minutes Review Form (Human-in-the-loop before saving) -->
+      <div id="transcribe-results-area" style="display: none;">
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--color-text); display: block; margin-bottom: 4px;">Raw Speech Transcript (Verbatim):</label>
+          <div id="transcribe-raw-text" style="font-size: 0.8rem; line-height: 1.45; max-height: 110px; overflow-y: auto; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 8px; color: var(--color-text-muted); font-family: var(--font-mono);"></div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.78rem; font-weight: 700; color: var(--color-text); display: block; margin-bottom: 4px;">Judicial Minutes of Proceedings (Editable by Bench):</label>
+          <textarea id="transcribe-edit-minutes" class="form-control" rows="4" style="font-size: 0.85rem; line-height: 1.45;"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2" style="gap: 8px; margin-bottom: 10px;">
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--color-text); display: block; margin-bottom: 4px;">Action Items & Directives:</label>
+            <textarea id="transcribe-edit-actions" class="form-control" rows="2" style="font-size: 0.82rem;"></textarea>
+          </div>
+          <div>
+            <label style="font-size: 0.78rem; font-weight: 700; color: var(--color-text); display: block; margin-bottom: 4px;">Suggested Next Hearing Date:</label>
+            <input type="text" id="transcribe-edit-next-date" class="form-control" style="font-size: 0.85rem;">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--color-border); padding-top: 10px; font-size: 0.72rem; color: var(--color-text-muted);">
+          <span class="badge badge-outline" style="font-size: 0.65rem;">⚖️ AI-generated, review before use</span>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="copyMinutesText()">Copy</button>
+            <button type="button" class="btn btn-success btn-sm" onclick="saveApprovedMinutes()">
+              <i data-lucide="check-circle" style="width: 14px; height: 14px; margin-right: 4px;"></i> Approve & Save Minutes to Record
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Order Dictation & Issuance Modal -->
+<div id="order-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 680px;">
+    <div class="modal-header">
+      <div>
+        <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px 8px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); color: var(--color-accent); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: var(--space-1);">
+          <span class="pulse-dot"></span> Judicial Chambers &bull; Order Issuance
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.25rem; color: var(--color-text);">Pass Judicial Order / Judgment</h3>
+      </div>
+      <button onclick="closeModal('order-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+
+    <form id="order-form" onsubmit="submitOrder(event)" class="modal-body" style="padding: var(--space-6);">
+      <input type="hidden" id="order-case-id">
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); background: var(--color-surface-subtle); border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-bottom: var(--space-5);">
+        <span style="font-size: 0.82rem; color: var(--color-text-secondary); font-weight: 500;">Presiding Matter:</span>
+        <span class="badge badge-primary" style="font-family: var(--font-mono); font-size: 0.82rem;" id="order-case-number"></span>
+      </div>
+
+      <div class="grid grid-cols-2">
+        <div class="form-group">
+          <label class="form-label" for="order-type">Order Template & Category</label>
+          <select id="order-type" class="form-control" onchange="applyOrderTemplate(this.value)">
+            <option value="Interim">Interim Order (Status Quo / Notice)</option>
+            <option value="Bail">Bail Order</option>
+            <option value="Final">Final Judgment & Decree</option>
+            <option value="Notice">Show Cause Notice</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="order-title">Order Title / Caption <span style="color: var(--color-danger);">*</span></label>
+          <input type="text" id="order-title" class="form-control" value="Order on Interim Injunction" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+          <label class="form-label" style="margin: 0;" for="order-content">
+            Operative Judicial Directions & Dictation <span style="color: var(--color-danger);">*</span>
+          </label>
+          <button type="button" class="btn btn-accent btn-sm" id="btn-ai-draft-order" style="font-size: 0.72rem; padding: 2px 10px;" onclick="generateAiOrderDraft()">
+            <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i> AI Draft from Case & Hearing Notes
+          </button>
+        </div>
+        
+        <div id="ai-draft-badge-row" style="display: none; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2);">
+          <span class="badge badge-outline" style="font-size: 0.65rem;">AI-generated, review before use</span>
+          <span class="badge badge-accent" id="ai-order-mode-pill" style="font-size: 0.65rem;">DEMO MODE</span>
+        </div>
+
+        <textarea id="order-content" class="form-control" rows="8" style="font-family: var(--font-serif); font-size: 0.95rem; line-height: 1.6; border-color: var(--color-border);" required></textarea>
+        
+        <div style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); font-size: 0.72rem; color: var(--color-text-muted);">
+          <i data-lucide="shield-check" style="width: 14px; height: 14px; color: var(--color-accent);"></i>
+          <span>Submitting will cryptographically sign this order with an immutable SHA-256 hash & digital verification token.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="printFormalOrder()">
+          <i data-lucide="printer"></i> Print Document
+        </button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('order-modal')">Cancel</button>
+        <button type="submit" class="btn btn-accent">
+          <i data-lucide="stamp"></i> Cryptographically Sign & Issue Order
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Adjournment Modal -->
+<div id="adjourn-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="card-title heading-serif" style="font-size: 1.2rem; color: var(--color-text);">Adjourn Judicial Hearing</h3>
+      <button onclick="closeModal('adjourn-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <form id="adjourn-form" onsubmit="submitAdjournment(event)" class="modal-body" style="padding: var(--space-6);">
+      <input type="hidden" id="adjourn-hearing-id">
+      <div style="margin-bottom: var(--space-4); font-size: 0.88rem; color: var(--color-text); background: var(--color-surface-subtle); padding: var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+        Case: <strong id="adjourn-case-number" style="font-family: var(--font-mono); color: var(--color-primary-light);"></strong>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="adjourn-reason-select">Adjournment Grounds Category <span style="color: var(--color-danger);">*</span></label>
+        <select id="adjourn-reason-select" class="form-control" onchange="document.getElementById('adjourn-reason-text').value = this.value">
+          <option value="On joint request of learned counsel for parties.">Joint Request of Counsel</option>
+          <option value="Filing of counter-affidavit by respondent pending.">Counter-Affidavit Awaited</option>
+          <option value="Witness unserved; fresh summons ordered.">Witness Unserved</option>
+          <option value="Bench time exhausted; matter adjourned in part-heard status.">Bench Time Exhausted</option>
+          <option value="Other">Other Specific Grounds...</option>
+        </select>
+        <input type="text" id="adjourn-reason-text" class="form-control" style="margin-top: 6px;" value="On joint request of learned counsel for parties." required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="adjourn-next-date">Next Date of Hearing <span style="color: var(--color-danger);">*</span></label>
+        <input type="date" id="adjourn-next-date" class="form-control" required>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); background: transparent;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('adjourn-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Adjourn Matter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- AI Summary Modal -->
+<div id="ai-summary-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 620px;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: var(--space-2);">
+        <div style="width: 28px; height: 28px; border-radius: var(--radius-md); background: rgba(201, 162, 75, 0.15); color: var(--color-accent); display: flex; align-items: center; justify-content: center;">
+          <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+        </div>
+        <h3 class="card-title heading-serif" style="font-size: 1.2rem; color: var(--color-text);">NyayaDesk AI Judicial Synthesis</h3>
+      </div>
+      <button onclick="closeModal('ai-summary-modal')" style="background: none; border: none; font-size: 1.4rem; color: var(--color-text-muted); cursor: pointer; line-height: 1;">&times;</button>
+    </div>
+    <div id="ai-summary-body" style="font-size: 0.88rem; line-height: 1.6; padding: var(--space-6); max-height: 440px; overflow-y: auto;">
+      <div style="text-align: center; padding: 2rem;">Generating AI legal briefing...</div>
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--color-border); background: var(--color-surface-subtle);">
+      <span class="badge badge-outline" style="font-size: 0.65rem;">AI-generated &bull; Review before use</span>
+      <div style="display: flex; gap: var(--space-2);">
+        <button class="btn btn-outline btn-sm" id="btn-copy-ai-brief" onclick="copyAiSummaryFromModal()">
+          <i data-lucide="copy" style="width: 13px; height: 13px;"></i> Copy Brief
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="closeModal('ai-summary-modal')">Close Briefing</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let lastFetchedBriefText = '';
+
+function copyAiSummaryFromModal() {
+  if (lastFetchedBriefText) {
+    navigator.clipboard.writeText(lastFetchedBriefText).then(() => {
+      showToast('AI Summary copied to clipboard!', 'success');
+    });
+  }
+}
+
+async function generateAiOrderDraft() {
+  const caseId = document.getElementById('order-case-id').value;
+  const orderType = document.getElementById('order-type').value;
+  const btn = document.getElementById('btn-ai-draft-order');
+  const badgeRow = document.getElementById('ai-draft-badge-row');
+  const modePill = document.getElementById('ai-order-mode-pill');
+  const originalHtml = btn.innerHTML;
+
+  btn.disabled = true;
+  btn.innerHTML = `<i data-lucide="loader" class="spin" style="width:12px;height:12px;"></i> Generating...`;
+
+  try {
+    const res = await fetch('/api/ai/order-draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, order_type: orderType, notes: 'Arguments heard on admission. Record perused.' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('order-content').value = data.draft;
+      document.getElementById('order-title').value = data.title;
+      if (badgeRow) badgeRow.style.display = 'flex';
+      if (modePill) modePill.textContent = data.mode === 'live' ? 'LIVE GEMINI' : 'DEMO MODE';
+      showToast('AI Order Draft generated! Review and edit before issuing.', 'success', 5000);
+    } else {
+      showToast('Failed to draft order.', 'danger');
+    }
+  } catch(e) {
+    showToast('Error communicating with AI assistant.', 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+    if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+  }
+}
+
+let isAiOrderActive = false;
+let originalHearingsHtml = null;
+
+async function toggleAICauseList() {
+  const container = document.querySelector('#cause-list-section > div:last-child > div');
+  const btn = document.getElementById('btn-toggle-ai-order');
+  if (!container) return;
+
+  if (isAiOrderActive) {
+    if (originalHearingsHtml) container.innerHTML = originalHearingsHtml;
+    btn.classList.remove('btn-accent');
+    btn.classList.add('btn-outline');
+    btn.innerHTML = '<i data-lucide="sparkles" style="width:13px;height:13px;color:var(--color-accent);"></i> AI Suggested Priority Sequence';
+    isAiOrderActive = false;
+    if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+    return;
+  }
+
+  originalHearingsHtml = container.innerHTML;
+  btn.innerHTML = '<i data-lucide="sparkles" class="spin" style="width:13px;height:13px;"></i> Optimizing Sequence...';
+
+  try {
+    const res = await fetch('/api/ai/cause-list-ordering');
+    const data = await res.json();
+    const ordered = data.ordered_hearings || [];
+
+    if (ordered.length === 0) {
+      showToast('No listed matters to reorder.', 'info');
+      btn.innerHTML = '<i data-lucide="sparkles" style="width:13px;height:13px;color:var(--color-accent);"></i> AI Suggested Priority Sequence';
+      return;
+    }
+
+    container.innerHTML = ordered.map((item, idx) => `
+      <div id="hearing-card-${item.hearing_id}" class="card-lift" style="border: 1px solid var(--color-border); border-left: 4px solid var(--color-accent); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--color-surface); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+        <div>
+          <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1);">
+            <span class="badge badge-accent" style="font-size: 0.72rem;">AI Item #${idx + 1}</span>
+            <strong style="font-size: 1rem; color: var(--color-text); font-family: var(--font-mono);">${item.case_number}</strong>
+            <span class="badge badge-info" style="font-size: 0.7rem;">${item.status}</span>
+            <span class="badge badge-primary" style="font-size: 0.68rem;">Score: ${item.priority_score} pts</span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.95rem; color: var(--color-text); margin-bottom: 2px;">${item.title}</div>
+          <div style="font-size: 0.8rem; color: var(--color-text-muted);">
+            <strong>Purpose:</strong> ${item.purpose} &bull; <strong>Time:</strong> ${item.scheduled_at} &bull; <strong>Venue:</strong> ${item.courtroom}
+          </div>
+        </div>
+
+        <div style="display: flex; gap: var(--space-2); align-items: center;">
+          <button class="btn btn-outline btn-sm" onclick="fetchAISummary(${item.case_id}, '${item.case_number}')">
+            <i data-lucide="sparkles" style="width: 13px; height: 13px; color: var(--color-accent);"></i> AI Summary
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="openCaseDrawer(${item.case_id})">
+            <i data-lucide="folder"></i> Docket
+          </button>
+          <button class="btn btn-accent btn-sm" onclick="openOrderModal(${item.case_id}, '${item.case_number}')">
+            <i data-lucide="file-signature"></i> Pass Order
+          </button>
+          <button class="btn btn-success btn-sm" onclick="completeHearing(${item.hearing_id})">
+            <i data-lucide="check"></i> Conclude
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="promptAdjourn(${item.hearing_id}, '${item.case_number}')">
+            <i data-lucide="calendar-clock"></i> Adjourn
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    btn.classList.remove('btn-outline');
+    btn.classList.add('btn-accent');
+    btn.innerHTML = '<i data-lucide="check" style="width:13px;height:13px;"></i> Viewing AI Priority Sequence (Reset)';
+    isAiOrderActive = true;
+    showToast('Cause list re-sequenced by AI priority scoring!', 'success');
+    if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+  } catch(e) {
+    showToast('Failed to optimize cause list.', 'danger');
+  }
+}
+
+const orderTemplates = {
+  Interim: `IN THE HIGH COURT OF DELHI
+CASE NO: WP(C)/1104/2026
+IN THE MATTER OF:
+Ramesh Chandra Gupta ...Petitioner
+VERSUS
+Municipal Corporation of Delhi ...Respondent
+
+CORAM: HON'BLE PRESIDING JUDGE
+
+ORDER:
+1. Issue notice to the respondents on process fee, returnable on the next listed date.
+2. Till the next date of hearing, status quo as on today with respect to the suit property shall be maintained by all parties.
+3. Counsel for the Respondent is directed to place on record the counter-affidavit within four weeks with advance copy to the petitioner.
+
+DATED: ${new Date().toLocaleDateString('en-IN')}`,
+
+  Bail: `IN THE SESSIONS COURT AT NEW DELHI
+CASE NO: BAIL/2026/00011
+IN THE MATTER OF:
+Harmanpreet Singh ...Applicant / Accused
+VERSUS
+State (NCT of Delhi) ...Respondent / Complainant
+
+CORAM: HON'BLE SESSIONS JUDGE
+
+ORDER ON BAIL APPLICATION:
+1. Heard learned counsel for the applicant and learned Public Prosecutor for the State.
+2. Considering that the investigation is substantially complete, the applicant is admitted to regular bail on furnishing a personal bond in the sum of Rs. 50,000/- with one surety of the like amount to the satisfaction of the Trial Court.
+3. The applicant shall surrender their passport and shall not tamper with prosecution evidence.
+
+DATED: ${new Date().toLocaleDateString('en-IN')}`,
+
+  Final: `IN THE HIGH COURT OF DELHI
+CIVIL ORIGINAL JURISDICTION
+CASE NO: CIV/2026/00010
+
+IN THE MATTER OF:
+Surya Enterprises ...Plaintiff
+VERSUS
+Global Tech Logistics ...Defendant
+
+FINAL JUDGMENT & DECREE:
+1. The present commercial dispute for recovery of outstanding commercial dues was heard finally.
+2. In view of the admission of liability and perusal of Exhibit P-1 to P-8, the suit of the plaintiff is decreed for a sum of Rs. 45,20,000/- along with interest @ 9% per annum from the date of filing until realization.
+3. Decree sheet be drawn accordingly. File be consigned to the record room.
+
+DATED: ${new Date().toLocaleDateString('en-IN')}`,
+
+  Notice: `IN THE HIGH COURT OF DELHI
+CASE NO: MISC/2026/00088
+
+SHOW CAUSE NOTICE:
+Whereas the applicant has moved an application under Order 39 Rule 1 & 2 CPC.
+You are hereby required to appear before this Court in person or by an authorized advocate on the next scheduled hearing date at 10:30 AM to show cause why the relief prayed for should not be granted.
+Given under the hand and seal of this Court.
+
+DATED: ${new Date().toLocaleDateString('en-IN')}`
+};
+
+function applyOrderTemplate(type) {
+  document.getElementById('order-content').value = orderTemplates[type] || orderTemplates['Interim'];
+}
+
+function openOrderModal(caseId, caseNumber) {
+  document.getElementById('order-case-id').value = caseId || 1;
+  document.getElementById('order-case-number').textContent = caseNumber;
+  applyOrderTemplate('Interim');
+  openModal('order-modal');
+}
+
+function printFormalOrder() {
+  const caseNumber = document.getElementById('order-case-number').textContent || 'WP(C)/1104/2026';
+  const title = document.getElementById('order-title').value;
+  const content = document.getElementById('order-content').value;
+  const orderType = document.getElementById('order-type').value;
+
+  const win = window.open('', '', 'width=800,height=900');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Judicial Order - ${caseNumber}</title>
+        <style>
+          @page { size: A4 portrait; margin: 20mm 15mm 20mm 15mm; }
+          body {
+            font-family: 'Times New Roman', Georgia, serif;
+            color: #111827;
+            padding: 24px;
+            max-width: 720px;
+            margin: 0 auto;
+            background: #FFF;
+            line-height: 1.6;
+            font-size: 11pt;
+          }
+          .court-header {
+            text-align: center;
+            border-bottom: 2px double #1F2937;
+            padding-bottom: 14px;
+            margin-bottom: 24px;
+          }
+          .emblem { font-size: 26pt; font-weight: bold; margin-bottom: 4px; }
+          .court-title { font-size: 14pt; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+          .court-sub { font-size: 10pt; font-style: italic; color: #4B5563; }
+          .coram { margin: 16px 0; font-weight: bold; font-size: 10.5pt; text-transform: uppercase; letter-spacing: 0.04em; }
+          .case-caption { margin-bottom: 20px; border-bottom: 1px solid #E5E7EB; padding-bottom: 12px; }
+          .order-body { text-align: justify; text-justify: inter-word; white-space: pre-line; margin: 20px 0; font-size: 11pt; }
+          .seal-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 48px;
+            padding-top: 14px;
+            border-top: 1px solid #9CA3AF;
+            page-break-inside: avoid;
+          }
+          .qr-placeholder {
+            width: 58pt;
+            height: 58pt;
+            border: 1.5px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            font-size: 7pt;
+            text-align: center;
+          }
+          .sign-block { text-align: right; font-size: 10pt; }
+          .footer-note { margin-top: 16px; font-size: 8pt; color: #6B7280; text-align: center; border-top: 1px dashed #D1D5DB; padding-top: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="court-header">
+          <div class="emblem">§</div>
+          <div class="court-title">IN THE HIGH COURT OF DELHI AT NEW DELHI</div>
+          <div class="court-sub">EXTRAORDINARY ORIGINAL CIVIL / WRIT JURISDICTION</div>
+        </div>
+
+        <div class="coram">
+          CORAM: HON'BLE JUSTICE RAJESH SHARMA, PRESIDING JUDGE
+        </div>
+
+        <div class="case-caption">
+          <strong>CASE NO:</strong> ${caseNumber}<br>
+          <strong>MATTER:</strong> ${title}<br>
+          <strong>ORDER TYPE:</strong> ${orderType.toUpperCase()} JUDICIAL ORDER
+        </div>
+
+        <div class="order-body">${content}</div>
+
+        <div class="seal-section">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="qr-placeholder">
+              [QR VERIFIED]<br>${caseNumber.substring(0, 8)}
+            </div>
+            <div style="font-size: 8.5pt; color: #4B5563;">
+              <div><strong>Digital Certificate Verification:</strong></div>
+              <div style="font-family: monospace; font-size: 7.5pt;">SHA256: 4a82b9c7e1039f826d9e01ab87201c3f</div>
+              <div>Certified by High Court Electronic Registry</div>
+            </div>
+          </div>
+
+          <div class="sign-block">
+            <div style="font-weight: bold;">(RAJESH SHARMA, J.)</div>
+            <div>Judge, High Court of Delhi</div>
+            <div style="font-size: 8pt; color: #6B7280;">[Digitally Sealed on ${new Date().toLocaleDateString('en-GB')}]</div>
+          </div>
+        </div>
+
+        <div class="footer-note">
+          Order uploaded on official portal. True copy issued under the authority of Registrar General, High Court of Delhi.
+        </div>
+        <script>window.print();<\/script>
+      </body>
+    </html>
+  `);
+  win.document.close();
+}
+
+async function submitOrder(e) {
+  e.preventDefault();
+  const caseId = document.getElementById('order-case-id').value;
+  const title = document.getElementById('order-title').value;
+  const orderType = document.getElementById('order-type').value;
+  const content = document.getElementById('order-content').value;
+
+  try {
+    const res = await fetch('/api/judge/orders/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ case_id: caseId, title, order_type: orderType, content })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`Order published! Verif Code: ${data.verification_code}`, 'success', 5000);
+      closeModal('order-modal');
+    }
+  } catch(e) {
+    showToast('Failed to issue order.', 'danger');
+  }
+}
+
+async function completeHearing(hearingId) {
+  if (!confirm("Confirm conclusion of this hearing session?")) return;
+  try {
+    const res = await fetch(`/api/judge/hearings/${hearingId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: 'Concluded before bench' })
+    });
+    if (res.ok) {
+      showToast('Hearing marked Concluded.', 'success');
+      const card = document.getElementById(`hearing-card-${hearingId}`);
+      if (card) card.style.opacity = '0.5';
+    }
+  } catch(e) {}
+}
+
+function promptAdjourn(hearingId, caseNumber) {
+  document.getElementById('adjourn-hearing-id').value = hearingId;
+  document.getElementById('adjourn-case-number').textContent = caseNumber;
+  
+  const next = new Date();
+  next.setDate(next.getDate() + 14);
+  document.getElementById('adjourn-next-date').value = next.toISOString().split('T')[0];
+
+  openModal('adjourn-modal');
+}
+
+async function submitAdjournment(e) {
+  e.preventDefault();
+  const hearingId = document.getElementById('adjourn-hearing-id').value;
+  const reason = document.getElementById('adjourn-reason-text').value;
+  const nextDate = document.getElementById('adjourn-next-date').value;
+
+  try {
+    const res = await fetch(`/api/judge/hearings/${hearingId}/adjourn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, next_date: nextDate })
+    });
+    if (res.ok) {
+      showToast('Hearing adjourned to ' + nextDate, 'info');
+      closeModal('adjourn-modal');
+      const card = document.getElementById(`hearing-card-${hearingId}`);
+      if (card) card.style.opacity = '0.5';
+    }
+  } catch(e) {}
+}
+
+async function fetchAISummary(caseId, caseNumber) {
+  openModal('ai-summary-modal');
+  const body = document.getElementById('ai-summary-body');
+  body.innerHTML = '<div style="text-align: center; padding: 2rem;"><i data-lucide="sparkles" class="spin" style="width:24px;height:24px;color:var(--color-accent);margin-bottom:0.5rem;"></i><div>Synthesizing AI case briefing...</div></div>';
+  if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+
+  try {
+    const res = await fetch(`/api/ai/summary/${caseId}`);
+    if (res.ok) {
+      const data = await res.json();
+      lastFetchedBriefText = data.summary;
+      
+      let formatted = (data.summary || '')
+        .replace(/### (.*?)\n/g, '<h5 style="color:var(--color-accent); margin:0.8rem 0 0.3rem 0; font-size:0.95rem;">$1</h5>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code style="font-size:0.78rem;">$1</code>')
+        .replace(/\n\n/g, '<p style="margin:0 0 0.5rem 0;"></p>')
+        .replace(/\n/g, '<br>');
+
+      body.innerHTML = `
+        <div style="margin-bottom: var(--space-4); border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-3); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span class="badge badge-primary">${caseNumber}</span>
+            <span class="badge ${data.mode === 'live' ? 'badge-success' : 'badge-accent'}" style="margin-left: 4px;">${data.mode === 'live' ? 'Live Gemini AI' : 'Demo Intelligence'}</span>
+          </div>
+          <span style="font-size: 0.72rem; color: var(--color-text-muted); font-family: var(--font-mono);">${data.timestamp}</span>
+        </div>
+        <div class="ai-briefing-prose">${formatted}</div>
+      `;
+    }
+  } catch(e) {
+    body.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--color-danger);">Failed to generate AI brief.</div>';
+  }
+}
+
+async function openCaseDrawer(caseId) {
+  openDrawer('case-detail-drawer');
+  const body = document.getElementById('drawer-case-body');
+  body.innerHTML = '<div style="text-align: center; padding: 2rem;">Loading case record...</div>';
+
+  try {
+    const res = await fetch(`/api/judge/cases/${caseId}`);
+    if (res.ok) {
+      const data = await res.json();
+      const c = data.case;
+      document.getElementById('drawer-case-number').textContent = c.case_number;
+      document.getElementById('drawer-case-type-badge').textContent = c.case_type.toUpperCase();
+
+      body.innerHTML = `
+        <div style="margin-bottom: var(--space-5);">
+          <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">${c.title}</h4>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">${c.description || 'No plaint summary recorded.'}</p>
+        </div>
+
+        <div style="display: flex; gap: 6px; margin-bottom: var(--space-5);">
+          <span class="badge badge-info">${c.status}</span>
+          <span class="badge ${c.priority === 'Urgent' ? 'badge-danger' : 'badge-neutral'}">${c.priority} Priority</span>
+          <span class="badge badge-outline">Filed: ${c.filed_on}</span>
+        </div>
+
+        <div style="background: var(--color-surface-subtle); padding: var(--space-4); border-radius: var(--radius-lg); border: 1px solid var(--color-border); margin-bottom: var(--space-5);">
+          <h5 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--color-text-muted); margin-bottom: var(--space-3); letter-spacing: 0.05em;">Litigant Parties & Advocates</h5>
+          ${(c.parties || []).map(p => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border); font-size: 0.85rem;">
+              <div>
+                <strong>${p.name}</strong>
+                <div style="font-size: 0.72rem; color: var(--color-text-muted);">${p.phone || p.email || 'No contact specified'}</div>
+              </div>
+              <span class="badge badge-primary">${p.type}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="margin-bottom: var(--space-5);">
+          <h5 style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--color-text-muted); margin-bottom: var(--space-3); letter-spacing: 0.05em;">Hearing Sessions History</h5>
+          ${(c.hearings || []).map(h => `
+            <div style="padding: var(--space-3); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); margin-bottom: 6px; font-size: 0.82rem;">
+              <div style="display: flex; justify-content: space-between;">
+                <strong>${h.scheduled_at}</strong>
+                <span class="badge ${h.status === 'Completed' ? 'badge-success' : 'badge-warning'}">${h.status}</span>
+              </div>
+              <div style="color: var(--color-text-muted); margin-top: 2px;">Purpose: ${h.purpose} &bull; Room: ${h.courtroom}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="display: flex; gap: var(--space-2);">
+          <button class="btn btn-accent btn-sm" style="flex: 1;" onclick="closeDrawer('case-detail-drawer'); openOrderModal(${c.id}, '${c.case_number}')">
+            <i data-lucide="pen-tool"></i> Pass Order
+          </button>
+          <button class="btn btn-outline btn-sm" style="flex: 1;" onclick="closeDrawer('case-detail-drawer'); fetchAISummary(${c.id}, '${c.case_number}')">
+            <i data-lucide="sparkles"></i> AI Summary
+          </button>
+        </div>
+      `;
+      if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
+    }
+  } catch(e) {}
+}
+
+let judgeTypesChart = null;
+let judgeOutcomesChart = null;
+
+async function initJudgeCharts() {
+  try {
+    const res = await fetch('/api/judge/analytics');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+    const textColor = isDark ? '#94A3B8' : '#64748B';
+
+    // Chart 1: Donut with Center Total
+    const ctx1 = document.getElementById('chart-judge-case-types');
+    if (ctx1) {
+      if (judgeTypesChart) judgeTypesChart.destroy();
+      judgeTypesChart = new Chart(ctx1.getContext('2d'), {
+        type: 'doughnut',
+        data: {
+          labels: data.case_types.labels,
+          datasets: [{
+            data: data.case_types.counts,
+            backgroundColor: ['#2563EB', '#C9A24B', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'],
+            borderWidth: 2,
+            borderColor: isDark ? '#111827' : '#FFFFFF'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, color: textColor } }
+          },
+          cutout: '70%'
+        }
+      });
+    }
+
+    // Chart 2: Disposition Velocity Rounded Bars
+    const ctx2 = document.getElementById('chart-judge-outcomes');
+    if (ctx2) {
+      if (judgeOutcomesChart) judgeOutcomesChart.destroy();
+      judgeOutcomesChart = new Chart(ctx2.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.outcomes.labels,
+          datasets: [{
+            label: 'Proceedings',
+            data: data.outcomes.counts,
+            backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: textColor } },
+            y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, precision: 0 } }
+          }
+        }
+      });
+    }
+  } catch(e) {}
+}
+
+async function initJudgeCalendar() {
+  const calEl = document.getElementById('judge-calendar');
+  if (!calEl || !window.FullCalendar) return;
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  const calendar = new FullCalendar.Calendar(calEl, {
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    events: '/api/judge/calendar-events',
+    eventClick: function(info) {
+      if (info.event.extendedProps && info.event.extendedProps.case_id) {
+        openCaseDrawer(info.event.extendedProps.case_id);
+      }
+    }
+  });
+  calendar.render();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initJudgeCharts();
+  initJudgeCalendar();
+});
+
+// Feature 7: NL Analytics for Judge
+let judgeNlChartInstance = null;
+
+function setJudgeNlPrompt(text) {
+  document.getElementById('judge-nl-query').value = text;
+  executeJudgeNlQuery();
+}
+
+async function executeJudgeNlQuery() {
+  const q = document.getElementById('judge-nl-query').value.trim();
+  if (!q) return;
+
+  const loading = document.getElementById('judge-nl-loading');
+  const resultBox = document.getElementById('judge-nl-result');
+  const summaryEl = document.getElementById('judge-nl-summary');
+  const toolBadge = document.getElementById('judge-nl-tool-badge');
+  const chartContainer = document.getElementById('judge-nl-chart-container');
+
+  loading.style.display = 'block';
+  resultBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/ai/ask-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    resultBox.style.display = 'block';
+
+    summaryEl.innerHTML = data.summary || 'Query computed successfully.';
+    toolBadge.textContent = 'Tool: ' + (data.tool_used || 'safe_query');
+
+    if (data.chart && data.chart.data) {
+      chartContainer.style.display = 'block';
+      const ctx = document.getElementById('judgeNlChart').getContext('2d');
+      if (judgeNlChartInstance) judgeNlChartInstance.destroy();
+      judgeNlChartInstance = new Chart(ctx, {
+        type: data.chart.type || 'bar',
+        data: data.chart.data,
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    } else {
+      chartContainer.style.display = 'none';
+    }
+  } catch(e) {
+    loading.style.display = 'none';
+    showToast('Analytics query error: ' + e.message, 'danger');
+  }
+}
+
+// Feature 5: Hearing Transcription & Minutes
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecordingLive = false;
+
+function openTranscriptionModal(hearingId, caseNumber) {
+  document.getElementById('transcribe-hearing-id').value = hearingId;
+  document.getElementById('transcribe-case-number').textContent = caseNumber;
+  document.getElementById('transcribe-results-area').style.display = 'none';
+  openModal('transcription-modal');
+}
+
+async function toggleHearingBrowserRecording() {
+  const btn = document.getElementById('btn-browser-record');
+  const indicator = document.getElementById('record-live-indicator');
+
+  if (isRecordingLive) {
+    if (mediaRecorder) mediaRecorder.stop();
+    isRecordingLive = false;
+    btn.classList.remove('btn-danger');
+    btn.classList.add('btn-outline');
+    btn.innerHTML = '<i data-lucide="mic"></i> Record in Browser';
+    indicator.style.display = 'none';
+    if (window.lucide) window.lucide.createIcons();
+  } else {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        showToast('Live courtroom audio recorded and buffered.', 'info');
+      };
+      mediaRecorder.start();
+      isRecordingLive = true;
+      btn.classList.remove('btn-outline');
+      btn.classList.add('btn-danger');
+      btn.innerHTML = '<i data-lucide="square"></i> Stop Recording';
+      indicator.style.display = 'block';
+      if (window.lucide) window.lucide.createIcons();
+    } catch(err) {
+      alert("Microphone access unavailable or blocked: " + err.message);
+    }
+  }
+}
+
+async function executeHearingTranscription() {
+  const hearingId = document.getElementById('transcribe-hearing-id').value;
+  const fileInput = document.getElementById('transcribe-audio-file');
+  const loading = document.getElementById('transcribe-loading');
+  const resultsArea = document.getElementById('transcribe-results-area');
+
+  loading.style.display = 'block';
+  resultsArea.style.display = 'none';
+
+  try {
+    const formData = new FormData();
+    if (audioChunks.length > 0) {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      formData.append('audio', audioBlob, 'live_hearing.webm');
+    } else if (fileInput.files.length > 0) {
+      formData.append('audio', fileInput.files[0]);
+    }
+
+    const res = await fetch(`/api/ai/hearings/${hearingId}/transcribe`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    loading.style.display = 'none';
+    resultsArea.style.display = 'block';
+
+    if (data.transcript) {
+      document.getElementById('transcribe-raw-text').textContent = data.transcript.raw_transcript || 'Audio transcribed.';
+    }
+    if (data.minutes) {
+      document.getElementById('transcribe-edit-minutes').value = data.minutes.minutes_summary || '';
+      document.getElementById('transcribe-edit-actions').value = (data.minutes.action_items || []).join('\n');
+      document.getElementById('transcribe-edit-next-date').value = data.minutes.suggested_next_hearing || '2026-12-15';
+    }
+    if (window.lucide) window.lucide.createIcons();
+  } catch(e) {
+    loading.style.display = 'none';
+    showToast('Transcription error: ' + e.message, 'danger');
+  }
+}
+
+async function saveApprovedMinutes() {
+  const hearingId = document.getElementById('transcribe-hearing-id').value;
+  const summary = document.getElementById('transcribe-edit-minutes').value.trim();
+  const rawActions = document.getElementById('transcribe-edit-actions').value.trim();
+  const nextDate = document.getElementById('transcribe-edit-next-date').value.trim();
+
+  if (!summary) {
+    alert('Please enter or verify the minutes summary.');
+    return;
+  }
+
+  const actionItems = rawActions ? rawActions.split('\n').filter(Boolean) : [];
+
+  try {
+    const res = await fetch(`/api/hearings/${hearingId}/save-minutes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        minutes_summary: summary,
+        action_items: actionItems,
+        suggested_next_hearing: nextDate
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Hearing minutes finalized and approved into official record!', 'success');
+      closeModal('transcription-modal');
+    }
+  } catch(e) {
+    showToast('Failed to save minutes: ' + e.message, 'danger');
+  }
+}
+
+function copyMinutesText() {
+  const m = document.getElementById('transcribe-edit-minutes').value;
+  navigator.clipboard.writeText(m);
+  showToast('Minutes copied to clipboard.', 'success');
+}
+
+</script>
+{% endblock %}

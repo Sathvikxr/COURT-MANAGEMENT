@@ -1,0 +1,906 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up / Role Registration - NyayaDesk{% endblock %}
+
+{% block styles %}
+<style>
+.register-container {
+  max-width: 840px;
+  margin: var(--space-8) auto;
+  padding: 0 var(--space-4);
+}
+
+.wizard-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+  position: relative;
+}
+
+.wizard-stepper::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 36px;
+  right: 36px;
+  height: 2px;
+  background: var(--color-border);
+  z-index: 1;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.step-indicator.active .step-circle {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #0B1F3A;
+  box-shadow: 0 0 0 4px rgba(201, 162, 75, 0.2);
+}
+
+.step-indicator.completed .step-circle {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #FFFFFF;
+}
+
+.step-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color var(--transition-fast);
+}
+
+.step-indicator.active .step-title {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.role-grid-select {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 768px) {
+  .role-grid-select {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .role-grid-select {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reg-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-8);
+  position: relative;
+}
+
+.step-content-pane {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.step-content-pane.active {
+  display: block;
+}
+
+.pwd-criterion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+.pwd-criterion.met {
+  color: var(--color-success);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+
+  <!-- Header -->
+  <div style="text-align: center; margin-bottom: var(--space-6);">
+    <div style="display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px 12px; border-radius: var(--radius-full); background: rgba(201, 162, 75, 0.12); border: 1px solid rgba(201, 162, 75, 0.25); color: var(--color-accent); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-3);">
+      <span class="pulse-dot"></span> Judicial Onboarding
+    </div>
+    <h1 class="heading-serif" style="font-size: 2.2rem; color: var(--color-text); letter-spacing: -0.02em; margin-bottom: var(--space-2);">
+      Apply for Bench & Judicial Access
+    </h1>
+    <p style="font-size: 0.9rem; color: var(--color-text-muted); max-width: 540px; margin: 0 auto;">
+      Create an authorized digital judicial identity. Multi-tier role governance with cryptographic validation and gazette verification.
+    </p>
+  </div>
+
+  <!-- Multi-Step Progress Indicator -->
+  <div class="wizard-stepper">
+    <button type="button" class="step-indicator active" id="step-btn-1" onclick="navToStep(1)">
+      <div class="step-circle" id="circle-1">1</div>
+      <div class="step-title">Role</div>
+    </button>
+    <button type="button" class="step-indicator" id="step-btn-2" onclick="navToStep(2)">
+      <div class="step-circle" id="circle-2">2</div>
+      <div class="step-title">Particulars</div>
+    </button>
+    <button type="button" class="step-indicator" id="step-btn-3" onclick="navToStep(3)">
+      <div class="step-circle" id="circle-3">3</div>
+      <div class="step-title">Verification</div>
+    </button>
+    <button type="button" class="step-indicator" id="step-btn-4" onclick="navToStep(4)">
+      <div class="step-circle" id="circle-4">4</div>
+      <div class="step-title">Review</div>
+    </button>
+  </div>
+
+  <!-- Client-side Error Banner -->
+  <div id="client-error-banner" class="alert alert-danger" style="display: none; margin-bottom: var(--space-6);">
+    <i data-lucide="alert-triangle"></i>
+    <span id="client-error-text"></span>
+  </div>
+
+  <!-- Registration Card Form -->
+  <div class="reg-card">
+    <form id="signup-form" method="POST" action="{{ url_for('auth.register') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- ========================================== -->
+      <!-- STEP 1: ROLE SELECTION -->
+      <!-- ========================================== -->
+      <div id="pane-step-1" class="step-content-pane active">
+        <div style="margin-bottom: var(--space-5);">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">
+            Step 1: Select Your Judicial or Court Role
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">
+            Each role configures a tailored judicial workspace, clearance permissions, and approval pathway.
+          </p>
+        </div>
+
+        <div class="role-grid-select">
+          <!-- Judge -->
+          <label class="role-card-option" id="role-card-judge" onclick="selectRole('judge')">
+            <input type="radio" name="role" value="judge" required>
+            <div style="font-size: 1.75rem; margin-bottom: var(--space-1);">⚖️</div>
+            <div class="role-card-title">Judge</div>
+            <div class="role-card-desc">High Court / District Bench</div>
+            <span class="badge badge-warning" style="font-size: 0.65rem; margin-top: var(--space-2);">Gov Approval</span>
+          </label>
+
+          <!-- Registrar -->
+          <label class="role-card-option" id="role-card-registrar" onclick="selectRole('registrar')">
+            <input type="radio" name="role" value="registrar">
+            <div style="font-size: 1.75rem; margin-bottom: var(--space-1);">📜</div>
+            <div class="role-card-title">Registrar</div>
+            <div class="role-card-desc">Court Administration & Roster</div>
+            <span class="badge badge-warning" style="font-size: 0.65rem; margin-top: var(--space-2);">Gov Approval</span>
+          </label>
+
+          <!-- Clerk -->
+          <label class="role-card-option" id="role-card-clerk" onclick="selectRole('clerk')">
+            <input type="radio" name="role" value="clerk">
+            <div style="font-size: 1.75rem; margin-bottom: var(--space-1);">🖥️</div>
+            <div class="role-card-title">Court Clerk</div>
+            <div class="role-card-desc">Bench Reader / Registry Master</div>
+            <span class="badge badge-warning" style="font-size: 0.65rem; margin-top: var(--space-2);">Reg. Approval</span>
+          </label>
+
+          <!-- Lawyer (Default Selected) -->
+          <label class="role-card-option selected" id="role-card-lawyer" onclick="selectRole('lawyer')">
+            <input type="radio" name="role" value="lawyer" checked>
+            <div style="font-size: 1.75rem; margin-bottom: var(--space-1);">💼</div>
+            <div class="role-card-title">Lawyer</div>
+            <div class="role-card-desc">Advocate on Record / Bar Member</div>
+            <span class="badge badge-success" style="font-size: 0.65rem; margin-top: var(--space-2);">Instant Active</span>
+          </label>
+
+          <!-- Litigant -->
+          <label class="role-card-option" id="role-card-litigant" onclick="selectRole('litigant')">
+            <input type="radio" name="role" value="litigant">
+            <div style="font-size: 1.75rem; margin-bottom: var(--space-1);">👤</div>
+            <div class="role-card-title">Litigant</div>
+            <div class="role-card-desc">Citizen / Party-in-Person</div>
+            <span class="badge badge-success" style="font-size: 0.65rem; margin-top: var(--space-2);">Instant Active</span>
+          </label>
+
+          <!-- Police -->
+          <label class="role-card-option" id="role-card-police" onclick="selectRole('police')">
+            <input type="radio" name="role" value="police">
+            <div style="font-size: 1.75rem; margin-bottom: var(--space-1);">👮</div>
+            <div class="role-card-title">Police Officer</div>
+            <div class="role-card-desc">Investigating Officer (IO)</div>
+            <span class="badge badge-success" style="font-size: 0.65rem; margin-top: var(--space-2);">Instant Active</span>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: var(--space-8); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+          <button type="button" class="btn btn-primary" onclick="proceedToStep(2)">
+            Continue to Particulars <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- STEP 2: BASIC PARTICULARS -->
+      <!-- ========================================== -->
+      <div id="pane-step-2" class="step-content-pane">
+        <div style="margin-bottom: var(--space-5);">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">
+            Step 2: Basic Contact & Security Credentials
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">
+            Provide legal identification and sign-in credentials for your judicial account.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label" for="full_name">Full Legal Name <span style="color: var(--color-danger);">*</span></label>
+            <input type="text" id="full_name" name="full_name" class="form-control" placeholder="e.g. Adv. Amit Verma or Hon. Rajesh Sharma" required value="{{ form_data.get('full_name', '') }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="email">Official / Registered Email <span style="color: var(--color-danger);">*</span></label>
+            <input type="email" id="email" name="email" class="form-control" placeholder="e.g. advocate.verma@delhibar.org" required value="{{ form_data.get('email', '') }}">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone Number (10 digits) <span style="color: var(--color-danger);">*</span></label>
+            <input type="tel" id="phone" name="phone" class="form-control" placeholder="9810012345" pattern="[0-9]{10}" required value="{{ form_data.get('phone', '') }}">
+            <span style="font-size: 0.72rem; color: var(--color-text-muted);">Required for SMS hearing notifications & OTP alerts.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="court_id">Primary Affiliated Court</label>
+            <select id="court_id" name="court_id" class="form-control">
+              <option value="">-- Select Court Complex --</option>
+              {% for court in courts %}
+                <option value="{{ court.id }}">{{ court.name }} ({{ court.city }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2">
+          <div class="form-group">
+            <label class="form-label" for="password">Password (Minimum 8 chars) <span style="color: var(--color-danger);">*</span></label>
+            <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required oninput="evaluatePasswordStrength(this.value)">
+            
+            <!-- Password Strength Bar -->
+            <div class="password-meter-container">
+              <div class="password-meter-bar">
+                <div id="password-meter-fill" class="password-meter-fill"></div>
+              </div>
+              <div class="password-strength-text">
+                <span id="password-strength-label" style="font-weight: 600; color: var(--color-text-muted);">Strength: None</span>
+                <span id="password-requirements" style="color: var(--color-text-muted);">Min 8 chars, mixed types</span>
+              </div>
+              <div style="margin-top: 6px;">
+                <div class="pwd-criterion" id="rule-len"><i data-lucide="circle" style="width: 12px; height: 12px;"></i> At least 8 characters</div>
+                <div class="pwd-criterion" id="rule-case"><i data-lucide="circle" style="width: 12px; height: 12px;"></i> Contains uppercase & lowercase letters</div>
+                <div class="pwd-criterion" id="rule-num"><i data-lucide="circle" style="width: 12px; height: 12px;"></i> Contains number or symbol</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirm_password">Confirm Password <span style="color: var(--color-danger);">*</span></label>
+            <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="••••••••" required oninput="checkPasswordMatch()">
+            <div id="password-match-msg" style="font-size: 0.75rem; margin-top: var(--space-2); font-weight: 600;"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: var(--space-8); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+          <button type="button" class="btn btn-outline" onclick="proceedToStep(1)">
+            <i data-lucide="arrow-left"></i> Back to Role
+          </button>
+          <button type="button" class="btn btn-primary" onclick="proceedToStep(3)">
+            Continue to Verification <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- STEP 3: DYNAMIC ROLE VERIFICATION -->
+      <!-- ========================================== -->
+      <div id="pane-step-3" class="step-content-pane">
+        <div style="margin-bottom: var(--space-5);">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">
+            Step 3: Role-Specific Verification Credentials
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">
+            Provide official credentials for identity authentication and registry authorization.
+          </p>
+        </div>
+
+        <div id="role-fields-container">
+          
+          <!-- JUDGE / REGISTRAR FIELDS -->
+          <div id="fields-judge-registrar" style="display: none;">
+            <div class="alert alert-warning" style="font-size: 0.85rem; margin-bottom: var(--space-4);">
+              <i data-lucide="shield-alert"></i>
+              <div>
+                <strong>Judicial Governance Protocol:</strong> Judge and Registrar accounts require executive approval from the Government (Ministry of Law). Your application reference will be issued immediately upon submission.
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2">
+              <div class="form-group">
+                <label class="form-label" for="employee_id">Judicial Service / Employee ID <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="employee_id" name="employee_id" class="form-control" placeholder="e.g. JUD-DHJS-2024-089">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="designation">Official Judicial Designation <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="designation" name="designation" class="form-control" placeholder="e.g. District & Sessions Judge or High Court Judge">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2">
+              <div class="form-group">
+                <label class="form-label" for="years_service">Years of Judicial Service</label>
+                <input type="number" id="years_service" name="years_service" class="form-control" placeholder="e.g. 12" min="1" max="50">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="id_proof_file">Upload ID Proof / Gazette Notification</label>
+                <input type="file" id="id_proof_file" name="id_proof_file" class="form-control" accept=".pdf,.png,.jpg,.jpeg">
+                <span style="font-size: 0.72rem; color: var(--color-text-muted);">PDF, JPG or PNG up to 10MB</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LAWYER FIELDS (Default) -->
+          <div id="fields-lawyer" style="display: block;">
+            <div class="alert alert-info" style="font-size: 0.85rem; margin-bottom: var(--space-4);">
+              <i data-lucide="shield-check"></i>
+              <div>
+                <strong>Advocate Accreditation:</strong> Bar Council registration is verified against public enrollment registries for instant active e-filing authorization.
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3">
+              <div class="form-group">
+                <label class="form-label" for="bar_registration_no">Bar Registration No. <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="bar_registration_no" name="bar_registration_no" class="form-control" placeholder="e.g. D/1482/2012">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="enrollment_year">Enrollment Year</label>
+                <input type="number" id="enrollment_year" name="enrollment_year" class="form-control" placeholder="2012" min="1960" max="2026">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="practice_area">Primary Practice Area</label>
+                <select id="practice_area" name="practice_area" class="form-control">
+                  <option value="Constitutional & Civil Litigation">Constitutional & Civil Litigation</option>
+                  <option value="Criminal Defense">Criminal Defense</option>
+                  <option value="Commercial & Corporate Law">Commercial & Corporate Law</option>
+                  <option value="Family & Matrimonial Law">Family & Matrimonial Law</option>
+                  <option value="Cheque Bounce & NI Act">Cheque Bounce & NI Act</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- CLERK FIELDS -->
+          <div id="fields-clerk" style="display: none;">
+            <div class="alert alert-info" style="font-size: 0.85rem; margin-bottom: var(--space-4);">
+              <i data-lucide="info"></i>
+              <div>
+                <strong>Registry Scrutiny:</strong> Court Clerk / Reader accounts are vetted and activated by the Registrar Administration.
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="clerk_employee_id">Court Registry Staff ID <span style="color: var(--color-danger);">*</span></label>
+              <input type="text" id="clerk_employee_id" name="clerk_employee_id" class="form-control" placeholder="e.g. CLK-DEL-8921">
+            </div>
+          </div>
+
+          <!-- POLICE FIELDS -->
+          <div id="fields-police" style="display: none;">
+            <div class="alert alert-info" style="font-size: 0.85rem; margin-bottom: var(--space-4);">
+              <i data-lucide="shield"></i>
+              <div>
+                <strong>Law Enforcement Gateway:</strong> Verified station credentials grant access to e-FIR filings, charge-sheet dockets, and witness summons status.
+              </div>
+            </div>
+            <div class="grid grid-cols-2">
+              <div class="form-group">
+                <label class="form-label" for="police_station">Police Station / Unit <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="police_station" name="police_station" class="form-control" placeholder="e.g. Tilak Marg Police Station">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="badge_number">Officer Badge / PIS Number <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="badge_number" name="badge_number" class="form-control" placeholder="e.g. DL-POL-7729">
+              </div>
+            </div>
+          </div>
+
+          <!-- LITIGANT FIELDS -->
+          <div id="fields-litigant" style="display: none;">
+            <div class="alert alert-info" style="font-size: 0.85rem; margin-bottom: var(--space-4);">
+              <i data-lucide="user"></i>
+              <div>
+                <strong>Citizen Access:</strong> Enables case tracking, cause list viewing, online fee payments, and procedural AI legal help.
+              </div>
+            </div>
+            <div class="grid grid-cols-3">
+              <div class="form-group">
+                <label class="form-label" for="city">City of Residence <span style="color: var(--color-danger);">*</span></label>
+                <input type="text" id="city" name="city" class="form-control" placeholder="e.g. New Delhi">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="optional_case_no">Existing Case No. (Optional)</label>
+                <input type="text" id="optional_case_no" name="optional_case_no" class="form-control" placeholder="e.g. WP(C)/1104/2026">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="aadhaar_last4">ID Proof Last 4 Digits</label>
+                <input type="text" id="aadhaar_last4" name="aadhaar_last4" class="form-control" placeholder="e.g. 4819" maxlength="4">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: var(--space-8); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+          <button type="button" class="btn btn-outline" onclick="proceedToStep(2)">
+            <i data-lucide="arrow-left"></i> Back to Particulars
+          </button>
+          <button type="button" class="btn btn-primary" onclick="proceedToStep(4)">
+            Review Application <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- STEP 4: REVIEW & CONFIRMATION -->
+      <!-- ========================================== -->
+      <div id="pane-step-4" class="step-content-pane">
+        <div style="margin-bottom: var(--space-5);">
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--color-text); margin-bottom: 4px;">
+            Step 4: Review Application & Declaration
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">
+            Please review your submitted particulars before formal transmission to the judicial registry.
+          </p>
+        </div>
+
+        <!-- Review Summary Table Card -->
+        <div style="background: var(--color-surface-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-6);">
+          <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-text-muted); font-weight: 700; letter-spacing: 0.05em; margin-bottom: var(--space-3);">
+            Applicant Dossier Summary
+          </h4>
+          <table class="table" style="font-size: 0.85rem;">
+            <tbody>
+              <tr>
+                <td style="width: 35%; font-weight: 600; color: var(--color-text-secondary);">Applied Role:</td>
+                <td><span id="rev-role" class="badge badge-primary">LAWYER</span></td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600; color: var(--color-text-secondary);">Full Legal Name:</td>
+                <td id="rev-name" style="font-weight: 600; color: var(--color-text);">-</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600; color: var(--color-text-secondary);">Official Email:</td>
+                <td id="rev-email" style="font-family: var(--font-mono);">-</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600; color: var(--color-text-secondary);">Phone Number:</td>
+                <td id="rev-phone">-</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600; color: var(--color-text-secondary);">Selected Court:</td>
+                <td id="rev-court">-</td>
+              </tr>
+              <tr>
+                <td style="font-weight: 600; color: var(--color-text-secondary);">Verification Detail:</td>
+                <td id="rev-detail" style="font-weight: 500;">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Judicial Undertaking Checkbox -->
+        <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-6);">
+          <label style="display: flex; align-items: flex-start; gap: var(--space-3); font-size: 0.82rem; color: var(--color-text-secondary); cursor: pointer; user-select: none;">
+            <input type="checkbox" id="declaration-check" required checked style="accent-color: var(--color-accent); margin-top: 2px;">
+            <span>
+              I solemnly affirm that the information provided is accurate and authentic under applicable judicial laws. I understand that misrepresentation of judicial credentials or official bar standing will lead to revocation of bench access.
+            </span>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+          <button type="button" class="btn btn-outline" onclick="proceedToStep(3)">
+            <i data-lucide="arrow-left"></i> Back to Verification
+          </button>
+          <button type="submit" id="submit-btn" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-size: 0.95rem; font-weight: 600;">
+            <i data-lucide="shield-check"></i> Complete Registration & Submit
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <div style="text-align: center; margin-top: var(--space-6); font-size: 0.85rem; color: var(--color-text-muted);">
+    Already have an authorized judicial account? 
+    <a href="{{ url_for('auth.login') }}" style="font-weight: 600; color: var(--color-primary-light);">
+      Sign In here &rarr;
+    </a>
+  </div>
+
+</div>
+
+<script>
+let currentRole = 'lawyer';
+let currentStep = 1;
+
+function selectRole(role) {
+  currentRole = role;
+
+  // Unselect all cards
+  document.querySelectorAll('.role-card-option').forEach(card => card.classList.remove('selected'));
+  
+  // Select clicked card and check radio
+  const targetCard = document.getElementById('role-card-' + role);
+  if (targetCard) {
+    targetCard.classList.add('selected');
+    const radio = targetCard.querySelector('input[type="radio"]');
+    if (radio) radio.checked = true;
+  }
+
+  // Hide all dynamic field containers
+  document.getElementById('fields-judge-registrar').style.display = 'none';
+  document.getElementById('fields-lawyer').style.display = 'none';
+  document.getElementById('fields-clerk').style.display = 'none';
+  document.getElementById('fields-police').style.display = 'none';
+  document.getElementById('fields-litigant').style.display = 'none';
+
+  // Show relevant container
+  if (role === 'judge' || role === 'registrar') {
+    document.getElementById('fields-judge-registrar').style.display = 'block';
+  } else if (role === 'lawyer') {
+    document.getElementById('fields-lawyer').style.display = 'block';
+  } else if (role === 'clerk') {
+    document.getElementById('fields-clerk').style.display = 'block';
+  } else if (role === 'police') {
+    document.getElementById('fields-police').style.display = 'block';
+  } else if (role === 'litigant') {
+    document.getElementById('fields-litigant').style.display = 'block';
+  }
+}
+
+function navToStep(stepNumber) {
+  if (stepNumber > currentStep) {
+    proceedToStep(stepNumber);
+  } else {
+    showStep(stepNumber);
+  }
+}
+
+function proceedToStep(targetStep) {
+  const errBanner = document.getElementById('client-error-banner');
+  const errText = document.getElementById('client-error-text');
+  errBanner.style.display = 'none';
+
+  // Validate step 1
+  if (currentStep === 1 && targetStep > 1) {
+    if (!currentRole) {
+      errText.textContent = "Please select a judicial or court role.";
+      errBanner.style.display = 'flex';
+      return;
+    }
+  }
+
+  // Validate step 2
+  if (currentStep === 2 && targetStep > 2) {
+    const name = document.getElementById('full_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const pwd = document.getElementById('password').value;
+    const confirm = document.getElementById('confirm_password').value;
+
+    if (!name || name.length < 3) {
+      errText.textContent = "Please provide your full legal name (minimum 3 characters).";
+      errBanner.style.display = 'flex';
+      return;
+    }
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      errText.textContent = "Please provide a valid official email address.";
+      errBanner.style.display = 'flex';
+      return;
+    }
+    if (!phone || phone.length < 10) {
+      errText.textContent = "Please enter a valid 10-digit mobile number.";
+      errBanner.style.display = 'flex';
+      return;
+    }
+    if (pwd.length < 8) {
+      errText.textContent = "Password must be at least 8 characters long.";
+      errBanner.style.display = 'flex';
+      return;
+    }
+    if (pwd !== confirm) {
+      errText.textContent = "Password and confirm password fields do not match.";
+      errBanner.style.display = 'flex';
+      return;
+    }
+  }
+
+  // Validate step 3
+  if (currentStep === 3 && targetStep > 3) {
+    if (currentRole === 'judge' || currentRole === 'registrar') {
+      const empId = document.getElementById('employee_id').value.trim();
+      const desig = document.getElementById('designation').value.trim();
+      if (!empId || !desig) {
+        errText.textContent = "Please enter Judicial Employee ID and Designation.";
+        errBanner.style.display = 'flex';
+        return;
+      }
+    } else if (currentRole === 'lawyer') {
+      const barNo = document.getElementById('bar_registration_no').value.trim();
+      if (!barNo) {
+        errText.textContent = "Bar Council Registration Number is required for advocates.";
+        errBanner.style.display = 'flex';
+        return;
+      }
+    } else if (currentRole === 'police') {
+      const stn = document.getElementById('police_station').value.trim();
+      const badge = document.getElementById('badge_number').value.trim();
+      if (!stn || !badge) {
+        errText.textContent = "Police Station and Badge Number are required.";
+        errBanner.style.display = 'flex';
+        return;
+      }
+    } else if (currentRole === 'litigant') {
+      const city = document.getElementById('city').value.trim();
+      if (!city) {
+        errText.textContent = "City of residence is required.";
+        errBanner.style.display = 'flex';
+        return;
+      }
+    }
+  }
+
+  // Populate step 4 review if advancing to step 4
+  if (targetStep === 4) {
+    populateReview();
+  }
+
+  showStep(targetStep);
+}
+
+function showStep(stepNumber) {
+  currentStep = stepNumber;
+
+  // Panes
+  for (let i = 1; i <= 4; i++) {
+    const pane = document.getElementById('pane-step-' + i);
+    const btn = document.getElementById('step-btn-' + i);
+    if (pane) {
+      if (i === stepNumber) {
+        pane.classList.add('active');
+      } else {
+        pane.classList.remove('active');
+      }
+    }
+    if (btn) {
+      btn.classList.remove('active', 'completed');
+      if (i === stepNumber) {
+        btn.classList.add('active');
+      } else if (i < stepNumber) {
+        btn.classList.add('completed');
+      }
+    }
+  }
+
+  window.scrollTo({ top: 120, behavior: 'smooth' });
+  lucide.createIcons();
+}
+
+function populateReview() {
+  document.getElementById('rev-role').textContent = currentRole.toUpperCase();
+  document.getElementById('rev-name').textContent = document.getElementById('full_name').value || '-';
+  document.getElementById('rev-email').textContent = document.getElementById('email').value || '-';
+  document.getElementById('rev-phone').textContent = document.getElementById('phone').value || '-';
+
+  const courtSelect = document.getElementById('court_id');
+  const courtText = courtSelect.options[courtSelect.selectedIndex]?.text || 'General Jurisdiction';
+  document.getElementById('rev-court').textContent = courtSelect.value ? courtText : 'None Selected';
+
+  let detail = '-';
+  if (currentRole === 'judge' || currentRole === 'registrar') {
+    detail = 'Emp ID: ' + (document.getElementById('employee_id').value || 'N/A') + ' | ' + (document.getElementById('designation').value || '');
+  } else if (currentRole === 'lawyer') {
+    detail = 'Bar Reg: ' + (document.getElementById('bar_registration_no').value || 'N/A') + ' (' + (document.getElementById('practice_area').value || '') + ')';
+  } else if (currentRole === 'clerk') {
+    detail = 'Staff ID: ' + (document.getElementById('clerk_employee_id').value || 'N/A');
+  } else if (currentRole === 'police') {
+    detail = 'Station: ' + (document.getElementById('police_station').value || 'N/A') + ' | Badge: ' + (document.getElementById('badge_number').value || '');
+  } else if (currentRole === 'litigant') {
+    detail = 'City: ' + (document.getElementById('city').value || 'N/A') + ' | Case: ' + (document.getElementById('optional_case_no').value || 'None');
+  }
+  document.getElementById('rev-detail').textContent = detail;
+}
+
+function evaluatePasswordStrength(pwd) {
+  const fill = document.getElementById('password-meter-fill');
+  const label = document.getElementById('password-strength-label');
+  const rLen = document.getElementById('rule-len');
+  const rCase = document.getElementById('rule-case');
+  const rNum = document.getElementById('rule-num');
+
+  let score = 0;
+  if (!pwd) {
+    fill.style.width = '0%';
+    label.textContent = 'Strength: None';
+    label.style.color = 'var(--color-text-muted)';
+    rLen.classList.remove('met');
+    rCase.classList.remove('met');
+    rNum.classList.remove('met');
+    return;
+  }
+
+  const hasLen = pwd.length >= 8;
+  const hasCase = /[A-Z]/.test(pwd) && /[a-z]/.test(pwd);
+  const hasNum = /[0-9]/.test(pwd) || /[^A-Za-z0-9]/.test(pwd);
+
+  if (hasLen) { score += 1; rLen.classList.add('met'); } else { rLen.classList.remove('met'); }
+  if (hasCase) { score += 1; rCase.classList.add('met'); } else { rCase.classList.remove('met'); }
+  if (hasNum) { score += 1; rNum.classList.add('met'); } else { rNum.classList.remove('met'); }
+  if (pwd.length >= 12) score += 1;
+
+  if (score <= 1) {
+    fill.style.width = '25%';
+    fill.style.backgroundColor = 'var(--color-danger)';
+    label.textContent = 'Strength: Weak';
+    label.style.color = 'var(--color-danger)';
+  } else if (score === 2) {
+    fill.style.width = '50%';
+    fill.style.backgroundColor = 'var(--color-warning)';
+    label.textContent = 'Strength: Fair';
+    label.style.color = 'var(--color-warning)';
+  } else if (score === 3) {
+    fill.style.width = '75%';
+    fill.style.backgroundColor = 'var(--color-info)';
+    label.textContent = 'Strength: Good';
+    label.style.color = 'var(--color-info)';
+  } else {
+    fill.style.width = '100%';
+    fill.style.backgroundColor = 'var(--color-success)';
+    label.textContent = 'Strength: Judicial Grade';
+    label.style.color = 'var(--color-success)';
+  }
+}
+
+function checkPasswordMatch() {
+  const pwd = document.getElementById('password').value;
+  const confirm = document.getElementById('confirm_password').value;
+  const msg = document.getElementById('password-match-msg');
+
+  if (!confirm) {
+    msg.textContent = '';
+    return;
+  }
+
+  if (pwd === confirm) {
+    msg.textContent = '✓ Passwords match';
+    msg.style.color = 'var(--color-success)';
+  } else {
+    msg.textContent = '✕ Passwords do not match';
+    msg.style.color = 'var(--color-danger)';
+  }
+}
+
+// Client-side form submission validation
+document.getElementById('signup-form').addEventListener('submit', function(e) {
+  const errBanner = document.getElementById('client-error-banner');
+  const errText = document.getElementById('client-error-text');
+  errBanner.style.display = 'none';
+
+  const pwd = document.getElementById('password').value;
+  const confirm = document.getElementById('confirm_password').value;
+
+  if (pwd.length < 8) {
+    e.preventDefault();
+    errText.textContent = "Password must be at least 8 characters long.";
+    errBanner.style.display = 'flex';
+    proceedToStep(2);
+    return;
+  }
+
+  if (pwd !== confirm) {
+    e.preventDefault();
+    errText.textContent = "Password and confirm password fields do not match.";
+    errBanner.style.display = 'flex';
+    proceedToStep(2);
+    return;
+  }
+
+  // Validate role-specific fields
+  if (currentRole === 'judge' || currentRole === 'registrar') {
+    const empId = document.getElementById('employee_id').value.trim();
+    const desig = document.getElementById('designation').value.trim();
+    if (!empId || !desig) {
+      e.preventDefault();
+      errText.textContent = "Please enter Judicial Employee ID and Designation.";
+      errBanner.style.display = 'flex';
+      proceedToStep(3);
+      return;
+    }
+  } else if (currentRole === 'lawyer') {
+    const barNo = document.getElementById('bar_registration_no').value.trim();
+    if (!barNo) {
+      e.preventDefault();
+      errText.textContent = "Bar Council Registration Number is required for advocates.";
+      errBanner.style.display = 'flex';
+      proceedToStep(3);
+      return;
+    }
+  } else if (currentRole === 'police') {
+    const stn = document.getElementById('police_station').value.trim();
+    const badge = document.getElementById('badge_number').value.trim();
+    if (!stn || !badge) {
+      e.preventDefault();
+      errText.textContent = "Police Station and Badge Number are required.";
+      errBanner.style.display = 'flex';
+      proceedToStep(3);
+      return;
+    }
+  } else if (currentRole === 'litigant') {
+    const city = document.getElementById('city').value.trim();
+    if (!city) {
+      e.preventDefault();
+      errText.textContent = "City of residence is required.";
+      errBanner.style.display = 'flex';
+      proceedToStep(3);
+      return;
+    }
+  }
+});
+</script>
+{% endblock %}

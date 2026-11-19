@@ -1,0 +1,50 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Virtual Environments
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment configurations and secrets
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded case files, evidence, receipts, and user proofs
+uploads/*
+!uploads/.gitkeep
+tests/screenshots/*
+!tests/screenshots/.gitkeep
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Temporary and log files
+*.log
+scratch/
+tmp/
